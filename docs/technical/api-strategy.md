@@ -41,6 +41,7 @@ This document defines the API architecture for the HiGraph-CPG query service. Th
 /api/v1/search/vector    # Semantic similarity search
 /api/v1/search/graph     # Structural graph traversal
 /api/v1/query            # Unified endpoint with automatic routing
+/api/v1/answer           # LLM answer generation with citations
 ```
 
 ### Authentication: None (Cloudflare Tunnel)
@@ -537,57 +538,121 @@ RETURN c.name, c.category, c.icd10_codes, type(rel) AS relationship_type
 
 ---
 
-## Query Router Prompt
+## Query Router
 
-The LLM router uses this prompt to classify queries:
+The query router uses Claude 3.5 Haiku (`claude-3-5-haiku-20241022`) to analyze questions and determine the retrieval strategy.
 
-```
-You are a query router for a clinical practice guideline knowledge graph.
+**Model**: `claude-3-5-haiku-20241022` (fast, ~$0.001/query)
 
-Analyze the user's question and determine:
-1. query_type: VECTOR | GRAPH | HYBRID
-2. entities: extracted conditions, drugs, patient factors
-3. intent: treatment_recommendation | evidence_lookup | drug_info | safety_check | general
-4. template_hint: which graph template might be useful (if GRAPH or HYBRID)
+### Routing Strategy
 
-Guidelines:
-- VECTOR: Open-ended questions, semantic similarity needed
-  Example: "Tell me about diabetes medications"
+| Route | When to Use | Examples |
+|-------|-------------|----------|
+| **VECTOR** | Vague, open-ended questions without specific entities | "Tell me about diabetes management", "What should I know?" |
+| **GRAPH** | Questions mentioning conditions, medications, topics, IDs, or care phases | "What about CKD?", "SGLT2 options?", "Pharmacotherapy recommendations?" |
+| **HYBRID** | Complex patient scenarios with MULTIPLE conditions | "Patient with CKD AND heart failure", "Elderly with kidney disease and CVD" |
 
-- GRAPH: Specific lookups, structural traversal needed
-  Example: "What studies support recommendation 19?"
+**Important**: The router prefers GRAPH over VECTOR when the question mentions:
+- Conditions/comorbidities: CKD, kidney disease, CVD, heart failure, retinopathy, neuropathy
+- Medications/interventions: metformin, SGLT2, GLP-1, insulin, lifestyle
+- Topics: pharmacotherapy, glycemic control, screening, self-management
+- Care phases: treatment, diagnosis, screening, prevention, follow-up
+- Allergies or contraindications to medications
 
-- HYBRID: Patient-specific questions needing both semantic match and structural context
-  Example: "What should I prescribe for a diabetic with CKD?"
+### Template Selection
 
-Available templates:
-- recommendation_only: fetch recs by ID
-- recommendation_with_evidence: recs + quality ratings
-- evidence_chain_full: rec → evidence → studies
-- studies_for_recommendation: all studies for one rec
-- recommendations_by_topic: filter by topic
-- recommendations_by_care_phase: filter by care phase (screening, diagnosis, treatment)
-- recommendations_by_condition: filter by condition/comorbidity (CKD, CVD, etc.)
-- recommendations_by_intervention: filter by intervention/medication (SGLT2i, GLP-1 RA)
-- disease_progression: show what conditions can develop from a condition
-- care_phases_overview: list all care phases with counts
-- conditions_overview: list all conditions with counts
-- interventions_overview: list all interventions with counts
+When routing to GRAPH or HYBRID, the system automatically selects a template based on extracted entities:
 
-Respond in JSON:
+| Extracted Entity | Template Selected |
+|------------------|-------------------|
+| `entities.conditions` present | `recommendations_by_condition` |
+| `entities.medications` present | `recommendations_by_intervention` |
+| `entities.topics` present | `recommendations_by_topic` |
+| `entities.rec_ids` present | `recommendation_with_evidence` |
+| `template_hint` provided | Use hint directly |
+| GRAPH routing, no entities | `conditions_overview` (fallback) |
+
+### Router Response Format
+
+```json
 {
   "query_type": "VECTOR|GRAPH|HYBRID",
-  "intent": "...",
+  "intent": "treatment_recommendation|evidence_lookup|drug_info|safety_check|general_question",
+  "confidence": 0.0-1.0,
   "entities": {
-    "condition": "...",
-    "drug": "...",
-    "comorbidity": "...",
-    "rec_id": "..."
+    "conditions": ["CKD", "heart failure"],
+    "medications": ["SGLT2 inhibitors"],
+    "patient_characteristics": ["elderly"],
+    "rec_ids": ["REC_022"],
+    "topics": ["Pharmacotherapy"]
   },
-  "template_hint": "...",
-  "search_text": "text to embed for vector search"
+  "template_hint": "recommendations_by_condition",
+  "reasoning": "Question mentions CKD, routing to graph for condition-specific lookup"
 }
 ```
+
+---
+
+## Answer Generation Endpoint
+
+### POST /api/v1/answer
+
+Generates natural language answers with citations using Claude Sonnet.
+
+**Model**: `claude-sonnet-4-20250514` (for high-quality synthesis)
+
+**Request**:
+```json
+{
+  "question": "What medications are recommended for diabetic patients with CKD?",
+  "conversation_history": [
+    {"role": "user", "content": "Tell me about diabetes treatment"},
+    {"role": "assistant", "content": "..."}
+  ],
+  "include_citations": true,
+  "include_studies": false,
+  "top_k": 5
+}
+```
+
+**Response**:
+```json
+{
+  "answer": "Based on the VA/DoD Clinical Practice Guideline, **SGLT2 inhibitors are strongly recommended** (Recommendation 22) for adults with type 2 diabetes and CKD...",
+  "citations": [
+    {
+      "rec_id": "CPG_DM_2023_REC_022",
+      "rec_text": "For adults with type 2 diabetes mellitus and chronic kidney disease...",
+      "strength": "Strong",
+      "direction": "For",
+      "topic": "Pharmacotherapy"
+    }
+  ],
+  "studies_cited": [],
+  "reasoning": {
+    "query_routing": "GRAPH",
+    "results_retrieved": 10,
+    "results_used": 3,
+    "generation_time_ms": 1200,
+    "total_time_ms": 1650,
+    "model_used": "claude-sonnet-4-20250514",
+    "tokens_used": {"prompt": 2400, "completion": 350},
+    "context_usage": {
+      "history_turns_received": 2,
+      "history_turns_used": 2,
+      "history_summarized": false,
+      "estimated_context_tokens": 150
+    }
+  }
+}
+```
+
+### Conversation Context Management
+
+- **Sliding window**: Last 10 turns (5 exchanges) included in prompt
+- **History summarization**: When window exceeded, older turns summarized via Haiku
+- **Token limit**: History truncated at ~2K tokens
+- **Clear chat**: Frontend can reset by sending empty `conversation_history`
 
 ---
 
@@ -696,7 +761,7 @@ def apply_reranking(results):
 
 ---
 
-**Document Version**: 1.2
+**Document Version**: 1.3
 **Created**: February 5, 2026
 **Updated**: February 5, 2026
-**Status**: ✅ Implemented — Phase 3 complete + V2 templates added
+**Status**: ✅ Implemented — Phase 3 complete + V2 templates + Answer generation + Query router improvements
