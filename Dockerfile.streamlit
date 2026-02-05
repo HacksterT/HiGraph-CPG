@@ -23,4 +23,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8101/_stcore/health || exit 1
 
 # Run Streamlit
-CMD ["streamlit", "run", "app.py", "--server.port=8101", "--server.address=0.0.0.0", "--server.headless=true"]
+# baseUrlPath enables proxied deployment at /higraph-cpg subpath
+CMD ["streamlit", "run", "app.py", "--server.port=8101", "--server.address=0.0.0.0", "--server.headless=true", "--server.baseUrlPath=/higraph-cpg"]
