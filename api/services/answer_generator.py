@@ -264,7 +264,7 @@ class AnswerGenerator:
             response = self.client.post(
                 "/v1/messages",
                 json={
-                    "model": "claude-haiku-4-20250514",  # Use fast model for summarization
+                    "model": "claude-3-5-haiku-20241022",  # Use fast model for summarization
                     "max_tokens": 150,
                     "messages": [
                         {"role": "user", "content": SUMMARIZE_HISTORY_PROMPT.format(history=history_text)}

@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     anthropic_api_key: str
 
     # Query router settings
-    router_model: str = "claude-haiku-4-20250514"  # Fast and cheap for routing
+    router_model: str = "claude-3-5-haiku-20241022"  # Fast and cheap for routing
 
     # API settings
     api_title: str = "HiGraph-CPG Query API"

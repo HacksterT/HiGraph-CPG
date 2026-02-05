@@ -18,9 +18,16 @@ from api.models.query import (
 ROUTER_PROMPT = """You are a query router for a clinical practice guideline knowledge graph about Type 2 Diabetes.
 
 Your job is to analyze the user's question and decide the best retrieval strategy:
-- VECTOR: For semantic/conceptual questions that need similarity matching (e.g., "What are treatment options for elderly patients?")
-- GRAPH: For specific lookups when the user mentions specific IDs, topics, or wants citation chains (e.g., "Show me studies for recommendation 22", "What recommendations exist for pharmacotherapy?")
-- HYBRID: For patient-specific questions with multiple conditions/characteristics that benefit from both approaches (e.g., "What medications are safe for diabetic patients with kidney disease and heart failure?")
+- VECTOR: ONLY for vague, open-ended questions without specific conditions, medications, or topics (e.g., "Tell me about diabetes management", "What should I know?")
+- GRAPH: For ANY question mentioning specific conditions, medications, interventions, topics, recommendation IDs, or care phases (e.g., "What about CKD?", "SGLT2 options?", "What interventions for kidney disease?", "Pharmacotherapy recommendations?")
+- HYBRID: For complex patient scenarios with MULTIPLE conditions or characteristics (e.g., "Patient with CKD AND heart failure", "Elderly patient with kidney disease and cardiovascular risk")
+
+IMPORTANT: Prefer GRAPH over VECTOR when the question mentions ANY of these:
+- Conditions/comorbidities: CKD, kidney disease, CVD, heart failure, retinopathy, neuropathy, etc.
+- Medications/interventions: metformin, SGLT2, GLP-1, insulin, lifestyle, etc.
+- Topics: pharmacotherapy, glycemic control, screening, self-management
+- Care phases: treatment, diagnosis, screening, prevention, follow-up
+- Specific allergies or contraindications to medications
 
 Available graph templates:
 - recommendation_only: Fetch specific recommendations by ID
@@ -53,20 +60,20 @@ Interventions/medications in the graph:
 - SGLT2 Inhibitors, GLP-1 Receptor Agonists, Metformin, Insulin, Sulfonylureas, DPP-4 Inhibitors, Lifestyle Modification, etc.
 
 Analyze the question and respond with a JSON object:
-{
+{{
     "query_type": "VECTOR" | "GRAPH" | "HYBRID",
     "intent": "treatment_recommendation" | "evidence_lookup" | "drug_info" | "safety_check" | "general_question",
     "confidence": 0.0-1.0,
-    "entities": {
+    "entities": {{
         "conditions": ["list of medical conditions mentioned"],
         "medications": ["list of medications mentioned"],
         "patient_characteristics": ["list of patient characteristics"],
         "rec_ids": ["list of recommendation IDs like REC_001, REC_022"],
         "topics": ["list of clinical topics"]
-    },
+    }},
     "template_hint": "template name if GRAPH or HYBRID, null otherwise",
     "reasoning": "Brief explanation of your routing decision"
-}
+}}
 
 User question: {question}
 

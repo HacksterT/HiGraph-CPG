@@ -188,12 +188,28 @@ async def generate_answer(
 
 def _select_template(decision) -> str | None:
     """Select graph template based on routing decision."""
+    # Explicit hint takes priority
     if decision.template_hint:
         return decision.template_hint
-    if decision.entities.topics:
+
+    entities = decision.entities
+
+    # V2 templates for conditions and medications
+    if entities.conditions:
+        return "recommendations_by_condition"
+    if entities.medications:
+        return "recommendations_by_intervention"
+
+    # V1 templates
+    if entities.topics:
         return "recommendations_by_topic"
-    if decision.entities.rec_ids:
+    if entities.rec_ids:
         return "recommendation_with_evidence"
+
+    # Fallback: if GRAPH routing but no entities, try conditions overview
+    if decision.query_type == QueryType.GRAPH:
+        return "conditions_overview"
+
     return None
 
 
@@ -201,6 +217,26 @@ def _build_params(decision, template_name: str) -> dict:
     """Build parameters for graph template."""
     entities = decision.entities
 
+    # V2 templates for conditions and interventions
+    if template_name == "recommendations_by_condition":
+        if entities.conditions:
+            return {"condition_name": entities.conditions[0]}
+        return {"condition_name": "Diabetic Kidney Disease"}
+
+    if template_name == "recommendations_by_intervention":
+        if entities.medications:
+            return {"intervention_name": entities.medications[0]}
+        return {"intervention_name": "SGLT2 Inhibitors"}
+
+    if template_name == "recommendations_by_care_phase":
+        # Extract care phase from patient characteristics or default
+        return {"care_phase_name": "Treatment"}
+
+    # Overview templates don't need params
+    if template_name in ("conditions_overview", "interventions_overview", "care_phases_overview"):
+        return {}
+
+    # V1 templates
     if template_name == "recommendations_by_topic":
         if entities.topics:
             return {"topic": entities.topics[0]}
