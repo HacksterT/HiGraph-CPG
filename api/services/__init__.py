@@ -1,5 +1,6 @@
 """Service modules for API business logic."""
 
+from api.services.answer_generator import AnswerGenerator, get_answer_generator
 from api.services.embedding_service import EmbeddingService, get_embedding_service
 from api.services.fusion import (
     normalize_graph_results,
@@ -26,6 +27,8 @@ __all__ = [
     "get_neo4j_service",
     "EmbeddingService",
     "get_embedding_service",
+    "AnswerGenerator",
+    "get_answer_generator",
     "GraphTemplate",
     "TemplateParam",
     "TEMPLATES",

@@ -1,5 +1,12 @@
 """Pydantic models for API requests and responses."""
 
+from api.models.answer import (
+    AnswerReasoning,
+    AnswerRequest,
+    AnswerResponse,
+    Citation,
+    StudyCitation,
+)
 from api.models.query import (
     ExtractedEntities,
     Intent,
@@ -36,6 +43,12 @@ __all__ = [
     "NodeType",
     "QueryType",
     "Intent",
+    # Answer Generation
+    "AnswerRequest",
+    "AnswerResponse",
+    "AnswerReasoning",
+    "Citation",
+    "StudyCitation",
     # Vector Search
     "VectorSearchRequest",
     "SearchResult",

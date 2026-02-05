@@ -399,6 +399,144 @@ ORDER BY r.rec_number
 
 ---
 
+## V2 Templates (Schema V2)
+
+The following templates leverage the V2 schema additions: CarePhase, Condition, and Intervention nodes.
+
+### Template: `recommendations_by_care_phase`
+
+Filter recommendations by care phase (screening, diagnosis, treatment, etc.).
+
+**Parameters**: `phase_name` (string, case-insensitive partial match)
+
+**Use Case**: "What are the screening recommendations?"
+
+```cypher
+MATCH (r:Recommendation)-[:BELONGS_TO]->(cp:CarePhase)
+WHERE toLower(cp.name) CONTAINS toLower($phase_name)
+RETURN r, cp.name AS phase_name
+ORDER BY r.rec_number
+```
+
+### Template: `recommendations_by_condition`
+
+Filter recommendations for patients with specific conditions.
+
+**Parameters**: `condition_name` (string, case-insensitive partial match)
+
+**Use Case**: "What recommendations apply to patients with CKD?"
+
+```cypher
+MATCH (r:Recommendation)-[rel:APPLIES_TO|RELEVANT_TO]->(c:Condition)
+WHERE toLower(c.name) CONTAINS toLower($condition_name)
+RETURN r, c.name AS condition_name, type(rel) AS relationship_type
+ORDER BY r.rec_number
+```
+
+### Template: `recommendations_by_intervention`
+
+Filter recommendations about specific interventions/medications.
+
+**Parameters**: `intervention_name` (string, case-insensitive partial match)
+
+**Use Case**: "What does the guideline say about SGLT2 inhibitors?"
+
+```cypher
+MATCH (r:Recommendation)-[:RECOMMENDS]->(i:Intervention)
+WHERE toLower(i.name) CONTAINS toLower($intervention_name)
+   OR toLower(i.category) CONTAINS toLower($intervention_name)
+RETURN r, i.name AS intervention_name, i.category AS intervention_category
+ORDER BY r.rec_number
+```
+
+### Template: `disease_progression`
+
+Show disease progression paths from a starting condition.
+
+**Parameters**: `condition_name` (string, case-insensitive partial match)
+
+**Use Case**: "What conditions can develop from prediabetes?"
+
+```cypher
+MATCH (c1:Condition)
+WHERE toLower(c1.name) CONTAINS toLower($condition_name)
+OPTIONAL MATCH (c1)-[r:MAY_DEVELOP|PRECURSOR_TO|ASSOCIATED_WITH]->(c2:Condition)
+RETURN c1.name AS source, type(r) AS relationship, c2.name AS target
+```
+
+### Template: `care_phases_overview`
+
+List all care phases with recommendation counts.
+
+**Parameters**: None
+
+**Use Case**: UI navigation - show available care phases
+
+```cypher
+MATCH (cp:CarePhase)
+OPTIONAL MATCH (r:Recommendation)-[:BELONGS_TO]->(cp)
+RETURN cp.name AS phase_name, count(r) AS rec_count
+ORDER BY cp.order_index
+```
+
+### Template: `conditions_overview`
+
+List all conditions with recommendation counts.
+
+**Parameters**: None
+
+**Use Case**: UI navigation - show available conditions
+
+```cypher
+MATCH (c:Condition)
+OPTIONAL MATCH (r:Recommendation)-[:APPLIES_TO|RELEVANT_TO]->(c)
+RETURN c.name AS condition_name, c.category, count(DISTINCT r) AS rec_count
+ORDER BY rec_count DESC
+```
+
+### Template: `interventions_overview`
+
+List all interventions with recommendation counts.
+
+**Parameters**: None
+
+**Use Case**: UI navigation - show available interventions
+
+```cypher
+MATCH (i:Intervention)
+OPTIONAL MATCH (r:Recommendation)-[:RECOMMENDS]->(i)
+RETURN i.name AS intervention_name, i.category, count(DISTINCT r) AS rec_count
+ORDER BY rec_count DESC
+```
+
+### Template: `interventions_for_recommendation`
+
+Get interventions recommended by a specific recommendation.
+
+**Parameters**: `rec_id` (string)
+
+**Use Case**: Evidence chain enrichment
+
+```cypher
+MATCH (r:Recommendation {rec_id: $rec_id})-[:RECOMMENDS]->(i:Intervention)
+RETURN i.name, i.category, i.mechanism
+```
+
+### Template: `conditions_for_recommendation`
+
+Get conditions that a recommendation applies to.
+
+**Parameters**: `rec_id` (string)
+
+**Use Case**: Evidence chain enrichment
+
+```cypher
+MATCH (r:Recommendation {rec_id: $rec_id})-[rel:APPLIES_TO|RELEVANT_TO]->(c:Condition)
+RETURN c.name, c.category, c.icd10_codes, type(rel) AS relationship_type
+```
+
+---
+
 ## Query Router Prompt
 
 The LLM router uses this prompt to classify queries:
@@ -428,6 +566,13 @@ Available templates:
 - evidence_chain_full: rec → evidence → studies
 - studies_for_recommendation: all studies for one rec
 - recommendations_by_topic: filter by topic
+- recommendations_by_care_phase: filter by care phase (screening, diagnosis, treatment)
+- recommendations_by_condition: filter by condition/comorbidity (CKD, CVD, etc.)
+- recommendations_by_intervention: filter by intervention/medication (SGLT2i, GLP-1 RA)
+- disease_progression: show what conditions can develop from a condition
+- care_phases_overview: list all care phases with counts
+- conditions_overview: list all conditions with counts
+- interventions_overview: list all interventions with counts
 
 Respond in JSON:
 {
@@ -551,7 +696,7 @@ def apply_reranking(results):
 
 ---
 
-**Document Version**: 1.1
+**Document Version**: 1.2
 **Created**: February 5, 2026
 **Updated**: February 5, 2026
-**Status**: ✅ Implemented — Phase 3 complete
+**Status**: ✅ Implemented — Phase 3 complete + V2 templates added

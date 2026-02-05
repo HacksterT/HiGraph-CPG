@@ -28,6 +28,13 @@ Available graph templates:
 - evidence_chain_full: Trace from recommendation to evidence to studies
 - studies_for_recommendation: Get all studies supporting a recommendation
 - recommendations_by_topic: Filter by topic (e.g., Pharmacotherapy, Glycemic Control, Prediabetes)
+- recommendations_by_care_phase: Filter by care phase (screening, diagnosis, treatment, complications, comorbidities, follow-up)
+- recommendations_by_condition: Filter by comorbidity/condition (CKD, CVD, heart failure, retinopathy, neuropathy, etc.)
+- recommendations_by_intervention: Filter by medication/intervention (SGLT2i, GLP-1 RA, metformin, insulin, etc.)
+- disease_progression: Show what conditions can develop from a given condition
+- care_phases_overview: List all care phases with counts (for navigation)
+- conditions_overview: List all conditions with counts (for navigation)
+- interventions_overview: List all interventions with counts (for navigation)
 
 Clinical topics in the knowledge graph:
 - Pharmacotherapy (medications, drug therapy)
@@ -35,6 +42,15 @@ Clinical topics in the knowledge graph:
 - Prediabetes (prevention, lifestyle)
 - Comorbidities (heart disease, kidney disease)
 - Self-Management (patient education, monitoring)
+
+Care phases available:
+- Screening & Prevention, Diagnosis, Treatment, Complication Management, Comorbidity Management, Follow-up
+
+Conditions in the graph:
+- Diabetic Kidney Disease (DKD/CKD), Cardiovascular Disease (CVD/ASCVD), Heart Failure, Retinopathy, Neuropathy, Prediabetes, etc.
+
+Interventions/medications in the graph:
+- SGLT2 Inhibitors, GLP-1 Receptor Agonists, Metformin, Insulin, Sulfonylureas, DPP-4 Inhibitors, Lifestyle Modification, etc.
 
 Analyze the question and respond with a JSON object:
 {

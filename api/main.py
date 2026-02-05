@@ -7,7 +7,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api import __version__
 from api.config import get_settings
-from api.routers import query_router, search_router
+from api.routers import answer_router, query_router, search_router
+from api.services.answer_generator import get_answer_generator
 from api.services.neo4j_service import get_neo4j_service
 from api.services.query_router import get_query_router
 
@@ -31,6 +32,10 @@ async def lifespan(app: FastAPI):
     query_router_service = get_query_router()
     query_router_service.close()
     print("Query router connection closed")
+
+    answer_gen = get_answer_generator()
+    answer_gen.close()
+    print("Answer generator connection closed")
 
 
 def create_app() -> FastAPI:
@@ -59,6 +64,7 @@ def create_app() -> FastAPI:
     # Include routers
     app.include_router(search_router)
     app.include_router(query_router)
+    app.include_router(answer_router)
 
     return app
 

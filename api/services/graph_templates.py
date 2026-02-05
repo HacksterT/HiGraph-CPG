@@ -184,6 +184,224 @@ TEMPLATES: dict[str, GraphTemplate] = {
             ORDER BY r.rec_number
         """
     ),
+
+    # ============================================================
+    # V2 Templates - CarePhase, Condition, Intervention
+    # ============================================================
+
+    "recommendations_by_care_phase": GraphTemplate(
+        name="recommendations_by_care_phase",
+        description="Filter recommendations by care phase",
+        use_case="Browse recommendations by phase of care (screening, diagnosis, treatment, etc.)",
+        params=[
+            TemplateParam(
+                name="phase_name",
+                type="string",
+                required=True,
+                description="Care phase name (case-insensitive partial match)"
+            )
+        ],
+        cypher="""
+            MATCH (r:Recommendation)-[:BELONGS_TO]->(cp:CarePhase)
+            WHERE toLower(cp.name) CONTAINS toLower($phase_name)
+            RETURN r.rec_id AS rec_id,
+                   r.rec_text AS rec_text,
+                   r.strength AS strength,
+                   r.direction AS direction,
+                   r.topic AS topic,
+                   cp.phase_id AS phase_id,
+                   cp.name AS phase_name,
+                   cp.description AS phase_description
+            ORDER BY r.rec_number
+        """
+    ),
+
+    "recommendations_by_condition": GraphTemplate(
+        name="recommendations_by_condition",
+        description="Filter recommendations by condition/comorbidity",
+        use_case="Find recommendations for patients with specific conditions (CKD, CVD, etc.)",
+        params=[
+            TemplateParam(
+                name="condition_name",
+                type="string",
+                required=True,
+                description="Condition name (case-insensitive partial match)"
+            )
+        ],
+        cypher="""
+            MATCH (r:Recommendation)-[rel:APPLIES_TO|RELEVANT_TO]->(c:Condition)
+            WHERE toLower(c.name) CONTAINS toLower($condition_name)
+               OR toLower(c.condition_id) CONTAINS toLower($condition_name)
+            RETURN r.rec_id AS rec_id,
+                   r.rec_text AS rec_text,
+                   r.strength AS strength,
+                   r.direction AS direction,
+                   r.topic AS topic,
+                   c.condition_id AS condition_id,
+                   c.name AS condition_name,
+                   type(rel) AS relationship_type
+            ORDER BY r.rec_number
+        """
+    ),
+
+    "recommendations_by_intervention": GraphTemplate(
+        name="recommendations_by_intervention",
+        description="Filter recommendations by intervention/medication",
+        use_case="Find recommendations about specific interventions (SGLT2i, GLP-1 RA, metformin, etc.)",
+        params=[
+            TemplateParam(
+                name="intervention_name",
+                type="string",
+                required=True,
+                description="Intervention name (case-insensitive partial match)"
+            )
+        ],
+        cypher="""
+            MATCH (r:Recommendation)-[:RECOMMENDS]->(i:Intervention)
+            WHERE toLower(i.name) CONTAINS toLower($intervention_name)
+               OR toLower(i.intervention_id) CONTAINS toLower($intervention_name)
+               OR (i.category IS NOT NULL AND toLower(i.category) CONTAINS toLower($intervention_name))
+            RETURN r.rec_id AS rec_id,
+                   r.rec_text AS rec_text,
+                   r.strength AS strength,
+                   r.direction AS direction,
+                   r.topic AS topic,
+                   i.intervention_id AS intervention_id,
+                   i.name AS intervention_name,
+                   i.category AS intervention_category
+            ORDER BY r.rec_number
+        """
+    ),
+
+    "disease_progression": GraphTemplate(
+        name="disease_progression",
+        description="Show disease progression paths from a condition",
+        use_case="Understand what conditions can develop from a given condition",
+        params=[
+            TemplateParam(
+                name="condition_name",
+                type="string",
+                required=True,
+                description="Starting condition name (case-insensitive partial match)"
+            )
+        ],
+        cypher="""
+            MATCH (c1:Condition)
+            WHERE toLower(c1.name) CONTAINS toLower($condition_name)
+            OPTIONAL MATCH (c1)-[r:MAY_DEVELOP|PRECURSOR_TO|ASSOCIATED_WITH]->(c2:Condition)
+            RETURN c1.condition_id AS source_id,
+                   c1.name AS source_name,
+                   c1.icd10_codes AS source_icd10,
+                   type(r) AS relationship,
+                   c2.condition_id AS target_id,
+                   c2.name AS target_name,
+                   c2.icd10_codes AS target_icd10
+            ORDER BY c1.name, type(r), c2.name
+        """
+    ),
+
+    "care_phases_overview": GraphTemplate(
+        name="care_phases_overview",
+        description="List all care phases with recommendation counts",
+        use_case="UI navigation - show available care phases for browsing",
+        params=[],
+        cypher="""
+            MATCH (cp:CarePhase)
+            OPTIONAL MATCH (r:Recommendation)-[:BELONGS_TO]->(cp)
+            WITH cp, count(r) AS rec_count
+            RETURN cp.phase_id AS phase_id,
+                   cp.name AS name,
+                   cp.description AS description,
+                   cp.order_index AS order_index,
+                   rec_count
+            ORDER BY cp.order_index
+        """
+    ),
+
+    "conditions_overview": GraphTemplate(
+        name="conditions_overview",
+        description="List all conditions with recommendation counts",
+        use_case="UI navigation - show available conditions for filtering",
+        params=[],
+        cypher="""
+            MATCH (c:Condition)
+            OPTIONAL MATCH (r:Recommendation)-[:APPLIES_TO|RELEVANT_TO]->(c)
+            WITH c, count(DISTINCT r) AS rec_count
+            RETURN c.condition_id AS condition_id,
+                   c.name AS name,
+                   c.category AS category,
+                   c.icd10_codes AS icd10_codes,
+                   rec_count
+            ORDER BY rec_count DESC, c.name
+        """
+    ),
+
+    "interventions_overview": GraphTemplate(
+        name="interventions_overview",
+        description="List all interventions with recommendation counts",
+        use_case="UI navigation - show available interventions for filtering",
+        params=[],
+        cypher="""
+            MATCH (i:Intervention)
+            OPTIONAL MATCH (r:Recommendation)-[:RECOMMENDS]->(i)
+            WITH i, count(DISTINCT r) AS rec_count
+            RETURN i.intervention_id AS intervention_id,
+                   i.name AS name,
+                   i.category AS category,
+                   i.mechanism AS mechanism,
+                   rec_count
+            ORDER BY rec_count DESC, i.name
+        """
+    ),
+
+    "interventions_for_recommendation": GraphTemplate(
+        name="interventions_for_recommendation",
+        description="Get interventions recommended by a specific recommendation",
+        use_case="Evidence chain enrichment - see what interventions a recommendation covers",
+        params=[
+            TemplateParam(
+                name="rec_id",
+                type="string",
+                required=True,
+                description="Single recommendation ID"
+            )
+        ],
+        cypher="""
+            MATCH (r:Recommendation {rec_id: $rec_id})-[:RECOMMENDS]->(i:Intervention)
+            RETURN i.intervention_id AS intervention_id,
+                   i.name AS name,
+                   i.category AS category,
+                   i.mechanism AS mechanism,
+                   r.rec_id AS rec_id,
+                   r.strength AS strength,
+                   r.direction AS direction
+            ORDER BY i.name
+        """
+    ),
+
+    "conditions_for_recommendation": GraphTemplate(
+        name="conditions_for_recommendation",
+        description="Get conditions that a recommendation applies to",
+        use_case="Evidence chain enrichment - see what conditions a recommendation addresses",
+        params=[
+            TemplateParam(
+                name="rec_id",
+                type="string",
+                required=True,
+                description="Single recommendation ID"
+            )
+        ],
+        cypher="""
+            MATCH (r:Recommendation {rec_id: $rec_id})-[rel:APPLIES_TO|RELEVANT_TO]->(c:Condition)
+            RETURN c.condition_id AS condition_id,
+                   c.name AS name,
+                   c.category AS category,
+                   c.icd10_codes AS icd10_codes,
+                   type(rel) AS relationship_type,
+                   r.rec_id AS rec_id
+            ORDER BY type(rel), c.name
+        """
+    ),
 }
 
 

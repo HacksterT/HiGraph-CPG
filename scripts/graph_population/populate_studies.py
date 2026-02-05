@@ -64,6 +64,10 @@ def run(config_path: str):
                         props['study_type'] = study_type
                     if study.get('abstract'):
                         props['abstract'] = study['abstract']
+                    if study.get('mesh_terms'):
+                        props['mesh_terms'] = study['mesh_terms']
+                    if study.get('publication_types'):
+                        props['publication_types'] = study['publication_types']
 
                     merge_node(tx, 'Study', 'study_id', study_id, props)
 
