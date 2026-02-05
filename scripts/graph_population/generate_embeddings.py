@@ -38,6 +38,16 @@ EMBEDDING_TARGETS = [
         'text_property': 'key_findings',
         'embedding_property': 'embedding',
     },
+    {
+        'label': 'Study',
+        'text_property': 'abstract',
+        'embedding_property': 'embedding',
+    },
+    {
+        'label': 'ClinicalModule',
+        'text_property': 'description',
+        'embedding_property': 'embedding',
+    },
 ]
 
 

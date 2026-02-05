@@ -10,28 +10,50 @@
 
 **Context**: This is Phase 2 of HiGraph-CPG. Phase 1 (foundation with schema and infrastructure) must be complete before starting this PRD.
 
-**Implementation**: Config-driven pipeline implemented. See `tasks/extraction-strategy.md` for technical architecture. Run via `python scripts/pipeline/run_pipeline.py --config configs/guidelines/diabetes-t2-2023.yaml`.
+**Implementation**: Config-driven pipeline scripts are implemented but were not used for initial data population. Instead, Phase 2 was completed using **manual extraction** — see `tasks/prd-manual-extraction.md`.
 
 ---
 
-## Resume Point (February 4, 2026)
+## Completion Note (February 5, 2026)
 
-All 48 pipeline scripts are written and syntax-verified. **No pipeline stages have been executed yet.** The next session should run the pipeline against the actual diabetes CPG PDF.
+**Phase 2 is COMPLETE** — but via manual extraction rather than the automated pipeline.
 
-**Before running anything:**
-1. Activate the virtual environment: `.\.venv\Scripts\Activate.ps1` (PowerShell) or `.\.venv\Scripts\activate.bat` (CMD)
-2. Verify Neo4j is running: `docker-compose up -d`
-3. Verify the PDF exists at `docs/source-guidelines/VADOD-Diabetes-CPG_Final_508.pdf`
-4. Verify `.env` has `ANTHROPIC_API_KEY`, `NEO4J_*`, `OPENAI_API_KEY`, `PUBMED_API_KEY`
+### What Happened
 
-**Then follow the Next Steps section at the bottom of this document** — run stages incrementally with human review checkpoints between each group. **Do NOT skip the review checkpoints.** Each one prevents a specific class of error from compounding downstream.
+The automated pipeline scripts were written and syntax-verified, but when we attempted to run them:
+1. LLM API token consumption was higher than expected
+2. Table extraction from the PDF produced inconsistent results
+3. We pivoted to having Claude directly read and extract data from the PDF
 
-**Key files for context:**
-- `tasks/human-review-guide.md` — **Detailed instructions for each review checkpoint** (what to look at, what to compare against, pass/fail thresholds, what to do if it fails)
-- `configs/guidelines/diabetes-t2-2023.yaml` — all page ranges, column mappings, expected counts
-- `scripts/pipeline/run_pipeline.py` — 12-stage orchestrator (`--start-from` / `--stop-after`)
-- `tasks/extraction-strategy.md` — full pipeline architecture and design rationale
-- `README.md` — setup, usage, and "adding a new guideline" guide
+### How Phase 2 Was Actually Completed
+
+See **`tasks/prd-manual-extraction.md`** for the complete execution log. In summary:
+- Claude read the PDF section-by-section using stair-stepping (3-5 pages at a time)
+- Extracted entities directly into JSON files
+- Used `scripts/pubmed/fetch_metadata.py` to enrich studies with abstracts and MeSH terms
+- Used `scripts/graph_population/populate_*.py` scripts to load data into Neo4j
+
+### Final Result
+
+| Entity Type | Count |
+|-------------|-------|
+| Guideline | 1 |
+| ClinicalModule | 9 |
+| Recommendation | 26 |
+| KeyQuestion | 12 |
+| EvidenceBody | 12 |
+| Study | 154 |
+| **Total Nodes** | **214** |
+| **Total Relationships** | **195** |
+
+### Pipeline Scripts — Still Available
+
+The automated pipeline remains available for future guidelines at `scripts/pipeline/run_pipeline.py`. The manual extraction was a one-time bootstrap; the pipeline may be preferred for subsequent guidelines.
+
+**Key documentation:**
+- `tasks/manual-extraction-strategy.md` — Documents the manual approach used
+- `tasks/prd-manual-extraction.md` — Execution checklist and final state
+- `tasks/extraction-strategy.md` — Original pipeline architecture (for reference)
 
 ---
 
@@ -461,7 +483,7 @@ python scripts/pipeline/run_pipeline.py --config configs/guidelines/diabetes-t2-
 
 ---
 
-**Document Version**: 2.0
+**Document Version**: 2.1
 **Created**: February 4, 2026
-**Last Updated**: February 4, 2026
-**Status**: Implementation Complete — Awaiting First Pipeline Run
+**Last Updated**: February 5, 2026
+**Status**: ✅ COMPLETE (via manual extraction — see `tasks/prd-manual-extraction.md`)

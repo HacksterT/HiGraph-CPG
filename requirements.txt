@@ -28,8 +28,19 @@ numpy>=1.24.0            # Numerical operations
 # Note: Embeddings generated server-side via Neo4j GenAI plugin + OpenAI.
 # No sentence-transformers or openai SDK needed for embeddings.
 
+# API Framework
+fastapi>=0.109.0         # Async API framework
+uvicorn[standard]>=0.27.0 # ASGI server
+pydantic-settings>=2.1.0 # Settings management
+httpx>=0.26.0            # Async HTTP client
+
 # Testing
 pytest>=7.0.0            # Test framework
+pytest-asyncio>=0.23.0   # Async test support
+httpx>=0.26.0            # Test client for FastAPI
+
+# Development & Linting
+ruff>=0.1.0              # Fast Python linter and formatter
 
 # Utilities
 tqdm>=4.66.0             # Progress bars

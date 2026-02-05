@@ -19,7 +19,31 @@ HiGraph-CPG transforms static VA/DoD Clinical Practice Guidelines (CPGs) into AI
 - **Cypher** — graph query language (see `docs/technical/GRAPH_TRAVERSALS.md`)
 - **Native `vector.similarity.cosine()`** — built-in Cypher function for similarity (no GDS library needed)
 
+## Development Environment
+
+**This project uses a Python virtual environment.** The venv is located at `.venv/` in the project root.
+
+**IMPORTANT for Claude Code:** When running bash commands on Windows:
+- Always activate the venv first OR use the full path to the venv Python executable
+- Use `cmd /c` prefix for Windows commands when needed
+- Working directory: `C:\Projects\va-work\HiGraph-CPG`
+
+```bash
+# Activate venv (Windows PowerShell)
+.\.venv\Scripts\Activate.ps1
+
+# Activate venv (Windows cmd)
+.venv\Scripts\activate.bat
+
+# Or run Python directly from venv
+.venv\Scripts\python.exe <script>
+.venv\Scripts\pytest.exe <args>
+.venv\Scripts\ruff.exe <args>
+```
+
 ## Common Commands
+
+**Note:** All commands below assume the virtual environment is activated.
 
 ```bash
 # Install dependencies
@@ -89,6 +113,40 @@ python scripts/test_vector_search.py
 
 # Run tests
 pytest tests/test_traversals.py -v
+
+# ============================================================
+# PHASE 3: QUERY API (port 8100 per C:\Projects\PORTS.md)
+# ============================================================
+
+# Start the Query API server
+python -m uvicorn api.main:app --host 127.0.0.1 --port 8100
+
+# API endpoints:
+# - GET  http://localhost:8100/health        # Health check
+# - GET  http://localhost:8100/docs          # OpenAPI docs
+# - POST http://localhost:8100/api/v1/search/vector  # Vector similarity search
+
+# Run API tests
+pytest tests/test_api_search.py -v
+
+# ============================================================
+# TESTING & LINTING
+# ============================================================
+
+# Run all tests
+pytest tests/ -v
+
+# Run specific test file
+pytest tests/test_api_search.py -v
+
+# Lint the codebase
+ruff check api/ scripts/
+
+# Lint and auto-fix
+ruff check api/ scripts/ --fix
+
+# Format code
+ruff format api/ scripts/
 ```
 
 ## Environment Variables
