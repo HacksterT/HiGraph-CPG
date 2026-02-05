@@ -1,0 +1,56 @@
+# Neo4j Docker volumes
+neo4j/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.egg-info/
+.mypy_cache/
+
+# Data pipeline outputs (regenerable)
+data/checkpoints/
+data/extracted/
+data/preprocessed/
+
+# Per-guideline data outputs (regenerable)
+data/guidelines/*/preprocessed/
+data/guidelines/*/extracted/
+data/guidelines/*/checkpoints/
+data/guidelines/*/manual_review/
+data/guidelines/*/validation/
+
+# Shared caches (regenerable)
+data/shared/pubmed_cache/
+
+# Source PDFs (too large for git, stored locally)
+data/guidelines/*/source/*.pdf
+docs/source-guidelines/*.pdf
+archive/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Claude Code
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db

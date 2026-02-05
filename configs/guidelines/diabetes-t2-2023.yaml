@@ -1,0 +1,121 @@
+# Configuration for VA/DoD Type 2 Diabetes Mellitus CPG (May 2023)
+# Used by scripts/pipeline/ to parameterize extraction for this guideline.
+
+guideline:
+  id: "CPG_DM_2023"
+  slug: "diabetes-t2-2023"
+  disease_condition: "Type 2 Diabetes Mellitus"
+  version: "6.0"
+  publication_date: "2023-05-01"
+  organization: "VA/DoD"
+  full_title: "VA/DoD Clinical Practice Guideline for the Management of Type 2 Diabetes Mellitus"
+  scope_description: "Management of type 2 diabetes mellitus in adults"
+  status: "Active"
+
+source:
+  pdf_filename: "VADOD-Diabetes-CPG_Final_508.pdf"
+  total_pages: 165
+
+sections:
+  recommendations_table:
+    start_page: 25
+    end_page: 70
+    table_name: "table_5_recommendations"
+    column_mapping:
+      "Topic": "topic"
+      "Subtopic": "subtopic"
+      "#": "rec_number"
+      "Recommendation": "rec_text"
+      "Strengtha": "strength_raw"
+      "Categoryb": "category"
+    # Alternative column names found in some pages
+    alt_column_names:
+      "Strength": "strength_raw"
+      "Category": "category"
+
+  key_questions_picots:
+    start_page: 78
+    end_page: 87
+
+  key_questions_table:
+    start_page: 90
+    end_page: 91
+    table_name: "table_a2_key_questions"
+
+  evidence_tables:
+    start_page: 109
+    end_page: 113
+    table_name: "appendix_e_evidence"
+
+  references:
+    start_page: 150
+    end_page: 165
+
+  appendix_f:
+    start_page: 114
+    end_page: 149
+
+# Clinical modules (topic groupings from Table 5)
+modules:
+  - id_suffix: "MOD_PREDIABETES"
+    name: "Prediabetes"
+    topics: ["Prediabetes"]
+    sequence_order: 1
+
+  - id_suffix: "MOD_SCREENING"
+    name: "Screening and Prevention"
+    topics: ["Screening and Prevention"]
+    sequence_order: 2
+
+  - id_suffix: "MOD_DIAG"
+    name: "Diagnosis"
+    topics: ["Diagnosis"]
+    sequence_order: 3
+
+  - id_suffix: "MOD_SELF_MGMT"
+    name: "Self-Management"
+    topics: ["Self-Management"]
+    sequence_order: 4
+
+  - id_suffix: "MOD_GLYCEMIC"
+    name: "Glycemic Targets"
+    topics: ["Glycemic Targets"]
+    sequence_order: 5
+
+  - id_suffix: "MOD_PHARMA"
+    name: "Pharmacotherapy"
+    topics: ["Pharmacotherapy"]
+    sequence_order: 6
+
+  - id_suffix: "MOD_COMPLICATIONS"
+    name: "Complications"
+    topics: ["Complications"]
+    sequence_order: 7
+
+  - id_suffix: "MOD_COMORBIDITIES"
+    name: "Comorbidities"
+    topics: ["Comorbidities"]
+    sequence_order: 8
+
+  - id_suffix: "MOD_SPECIAL_POP"
+    name: "Special Populations"
+    topics: ["Special Populations"]
+    sequence_order: 9
+
+expected_counts:
+  recommendations: 54
+  key_questions: 12
+  studies: 103
+  evidence_bodies: 12
+
+extraction:
+  llm_provider: "claude"
+  llm_model: "claude-3-5-sonnet-20241022"
+  batch_size: 5
+  max_retries: 3
+  retry_delay: 2.0
+
+confidence_thresholds:
+  auto_accept: 0.8
+  flag_for_review: 0.5
+  # Below flag_for_review -> excluded, sent to manual_review

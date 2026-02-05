@@ -1,0 +1,384 @@
+{
+  "schema_version": "1.0",
+  "relationship_types": [
+    {
+      "type": "PART_OF",
+      "from": "ClinicalModule",
+      "to": "Guideline",
+      "properties": [],
+      "description": "Module is part of guideline"
+    },
+    {
+      "type": "CONTAINS",
+      "from": "ClinicalModule",
+      "to": "KeyQuestion",
+      "properties": [],
+      "description": "Module contains key questions"
+    },
+    {
+      "type": "ADDRESSES",
+      "from": "KeyQuestion",
+      "to": "ClinicalModule",
+      "properties": [],
+      "description": "Key question addresses module topic"
+    },
+    {
+      "type": "ANSWERED_BY",
+      "from": "KeyQuestion",
+      "to": "EvidenceBody",
+      "properties": [],
+      "description": "Key question answered by evidence body"
+    },
+    {
+      "type": "LEADS_TO",
+      "from": "KeyQuestion",
+      "to": "Recommendation",
+      "properties": [],
+      "description": "Key question led to recommendation"
+    },
+    {
+      "type": "INCLUDES",
+      "from": "EvidenceBody",
+      "to": "Study",
+      "properties": [],
+      "description": "Evidence body includes this study"
+    },
+    {
+      "type": "SYNTHESIZES",
+      "from": "EvidenceBody",
+      "to": "Study",
+      "properties": [],
+      "description": "Evidence body synthesizes multiple studies"
+    },
+    {
+      "type": "ANSWERS",
+      "from": "EvidenceBody",
+      "to": "KeyQuestion",
+      "properties": [],
+      "description": "Evidence body answers key question"
+    },
+    {
+      "type": "SUPPORTS",
+      "from": "EvidenceBody",
+      "to": "Recommendation",
+      "properties": [
+        {"name": "strength", "type": "String", "description": "Strength qualifier"}
+      ],
+      "description": "Evidence supports recommendation"
+    },
+    {
+      "type": "REFUTES",
+      "from": "EvidenceBody",
+      "to": "Recommendation",
+      "properties": [
+        {"name": "reason", "type": "String", "description": "Reason evidence argues against"}
+      ],
+      "description": "Evidence argues against recommendation"
+    },
+    {
+      "type": "EVALUATED_BY",
+      "from": "EvidenceBody",
+      "to": "QualityAssessment",
+      "properties": [],
+      "description": "Evidence quality assessed"
+    },
+    {
+      "type": "MEASURES",
+      "from": "Study",
+      "to": "OutcomeMeasurement",
+      "properties": [],
+      "description": "Study measured this outcome"
+    },
+    {
+      "type": "DEMONSTRATES",
+      "from": "Study",
+      "to": ["Benefit", "AdverseEvent"],
+      "properties": [],
+      "description": "Study demonstrated this effect"
+    },
+    {
+      "type": "INCLUDED_IN",
+      "from": "Study",
+      "to": "EvidenceBody",
+      "properties": [],
+      "description": "Study included in evidence body"
+    },
+    {
+      "type": "COMPARES",
+      "from": "Study",
+      "to": "Intervention",
+      "properties": [
+        {"name": "vs", "type": "String", "description": "Comparison description"},
+        {"name": "outcome", "type": "String", "description": "Outcome measured"}
+      ],
+      "description": "Study compared interventions"
+    },
+    {
+      "type": "ENROLLS",
+      "from": "Study",
+      "to": "PatientPopulation",
+      "properties": [],
+      "description": "Study enrolled this population"
+    },
+    {
+      "type": "BASED_ON",
+      "from": "Recommendation",
+      "to": "EvidenceBody",
+      "properties": [],
+      "description": "Recommendation based on evidence"
+    },
+    {
+      "type": "APPLIES_TO",
+      "from": "Recommendation",
+      "to": ["PatientPopulation", "ClinicalScenario"],
+      "properties": [],
+      "description": "Recommendation applies to this group/scenario"
+    },
+    {
+      "type": "RECOMMENDS",
+      "from": "Recommendation",
+      "to": "Intervention",
+      "properties": [
+        {"name": "preference", "type": "String", "description": "preferred or alternative"}
+      ],
+      "description": "Recommendation suggests this intervention"
+    },
+    {
+      "type": "CONFLICTS_WITH",
+      "from": "Recommendation",
+      "to": "Recommendation",
+      "properties": [],
+      "description": "Recommendations conflict with each other"
+    },
+    {
+      "type": "SUPERSEDES",
+      "from": "Recommendation",
+      "to": "Recommendation",
+      "properties": [
+        {"name": "reason", "type": "String", "description": "Reason for superseding"},
+        {"name": "date", "type": "Date", "description": "When superseded"}
+      ],
+      "description": "New recommendation replaces old"
+    },
+    {
+      "type": "DETERMINED_BY",
+      "from": "Recommendation",
+      "to": "DecisionFramework",
+      "properties": [],
+      "description": "Recommendation determined by decision framework"
+    },
+    {
+      "type": "TRIGGERS",
+      "from": "ClinicalScenario",
+      "to": "Recommendation",
+      "properties": [
+        {"name": "priority", "type": "Integer", "description": "1=first line, 2=second line, etc."}
+      ],
+      "description": "Scenario triggers this recommendation"
+    },
+    {
+      "type": "REQUIRES",
+      "from": "ClinicalScenario",
+      "to": "PatientCharacteristic",
+      "properties": [],
+      "description": "Scenario requires this characteristic"
+    },
+    {
+      "type": "PRODUCES",
+      "from": "Intervention",
+      "to": "Benefit",
+      "properties": [
+        {"name": "magnitude", "type": "String", "description": "Effect magnitude"}
+      ],
+      "description": "Intervention produces this benefit"
+    },
+    {
+      "type": "CAUSES",
+      "from": "Intervention",
+      "to": "AdverseEvent",
+      "properties": [
+        {"name": "frequency", "type": "String", "description": "How common"}
+      ],
+      "description": "Intervention causes this adverse event"
+    },
+    {
+      "type": "CONTRAINDICATED_BY",
+      "from": "Intervention",
+      "to": "Contraindication",
+      "properties": [],
+      "description": "Intervention has this contraindication"
+    },
+    {
+      "type": "ALTERNATIVE_TO",
+      "from": "Intervention",
+      "to": "Intervention",
+      "properties": [
+        {"name": "context", "type": "String", "description": "When they are alternatives"}
+      ],
+      "description": "Interventions are alternatives"
+    },
+    {
+      "type": "COMBINES_WITH",
+      "from": "Intervention",
+      "to": "Intervention",
+      "properties": [],
+      "description": "Interventions can be combined"
+    },
+    {
+      "type": "MODIFIES",
+      "from": "PatientCharacteristic",
+      "to": "Recommendation",
+      "properties": [
+        {"name": "impact", "type": "String", "description": "strengthens or weakens"},
+        {"name": "direction", "type": "String", "description": "for or against"}
+      ],
+      "description": "Characteristic modifies recommendation"
+    },
+    {
+      "type": "INCREASES_RISK_OF",
+      "from": "PatientCharacteristic",
+      "to": "AdverseEvent",
+      "properties": [
+        {"name": "magnitude", "type": "String", "description": "Risk increase magnitude"}
+      ],
+      "description": "Characteristic increases adverse event risk"
+    },
+    {
+      "type": "CONTRAINDICATES",
+      "from": "Contraindication",
+      "to": "Intervention",
+      "properties": [],
+      "description": "Contraindication prevents intervention use"
+    },
+    {
+      "type": "APPLIES_TO",
+      "from": "Contraindication",
+      "to": "PatientCharacteristic",
+      "properties": [],
+      "description": "Contraindication applies when characteristic present"
+    },
+    {
+      "type": "OVERRIDES",
+      "from": "Contraindication",
+      "to": "Recommendation",
+      "properties": [
+        {"name": "context", "type": "String", "description": "Override context"}
+      ],
+      "description": "Contraindication overrides recommendation in certain contexts"
+    },
+    {
+      "type": "CONSIDERS",
+      "from": "DecisionFramework",
+      "to": "EvidenceBody",
+      "properties": [],
+      "description": "Framework considers this evidence"
+    },
+    {
+      "type": "WEIGHS",
+      "from": "DecisionFramework",
+      "to": ["Benefit", "AdverseEvent"],
+      "properties": [
+        {"name": "weight", "type": "String", "description": "critical or important"}
+      ],
+      "description": "Framework weighs this outcome"
+    },
+    {
+      "type": "DETERMINES",
+      "from": "DecisionFramework",
+      "to": "Recommendation",
+      "properties": [],
+      "description": "Framework determined recommendation strength/direction"
+    },
+    {
+      "type": "INFORMED_BY",
+      "from": "DecisionFramework",
+      "to": "QualityAssessment",
+      "properties": [],
+      "description": "Framework informed by quality assessment"
+    },
+    {
+      "type": "INFORMS",
+      "from": "QualityAssessment",
+      "to": "DecisionFramework",
+      "properties": [],
+      "description": "Assessment informs decision framework"
+    },
+    {
+      "type": "EVALUATES",
+      "from": "QualityAssessment",
+      "to": "EvidenceBody",
+      "properties": [],
+      "description": "Assessment evaluates evidence body"
+    },
+    {
+      "type": "MEASURES_OUTCOME",
+      "from": "OutcomeMeasurement",
+      "to": "Outcome",
+      "properties": [],
+      "description": "Measurement measures this outcome"
+    },
+    {
+      "type": "FROM_STUDY",
+      "from": "OutcomeMeasurement",
+      "to": "Study",
+      "properties": [],
+      "description": "Measurement from this study"
+    },
+    {
+      "type": "FOR_INTERVENTION",
+      "from": "OutcomeMeasurement",
+      "to": "Intervention",
+      "properties": [],
+      "description": "Measurement for this intervention"
+    },
+    {
+      "type": "PRODUCED_BY",
+      "from": "Benefit",
+      "to": "Intervention",
+      "properties": [],
+      "description": "Benefit produced by intervention"
+    },
+    {
+      "type": "DEMONSTRATED_IN",
+      "from": ["Benefit", "AdverseEvent"],
+      "to": "Study",
+      "properties": [],
+      "description": "Effect demonstrated in study"
+    },
+    {
+      "type": "SUPPORTED_BY",
+      "from": ["Benefit", "AdverseEvent"],
+      "to": "EvidenceBody",
+      "properties": [],
+      "description": "Effect supported by evidence body"
+    },
+    {
+      "type": "CAUSED_BY",
+      "from": "AdverseEvent",
+      "to": "Intervention",
+      "properties": [],
+      "description": "Adverse event caused by intervention"
+    },
+    {
+      "type": "DEFINED_IN",
+      "from": "PatientPopulation",
+      "to": "KeyQuestion",
+      "properties": [],
+      "description": "Population defined in key question PICOTS"
+    },
+    {
+      "type": "STUDIED_IN",
+      "from": "PatientPopulation",
+      "to": "Study",
+      "properties": [],
+      "description": "Population studied in this study"
+    },
+    {
+      "type": "TARGETED_BY",
+      "from": "PatientPopulation",
+      "to": "Recommendation",
+      "properties": [],
+      "description": "Population targeted by recommendation"
+    }
+  ]
+}

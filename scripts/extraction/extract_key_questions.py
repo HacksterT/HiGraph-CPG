@@ -1,0 +1,163 @@
+"""
+Extract Key Questions from CPG Appendix A
+
+Uses the key question template + batch processor + AI client to extract
+all key questions with PICOTS elements from the appendix markdown/text.
+"""
+
+import json
+import sys
+from pathlib import Path
+from dotenv import load_dotenv
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+load_dotenv()
+
+from scripts.pipeline.config_loader import load_config
+from scripts.pipeline.pipeline_context import PipelineContext
+from scripts.extraction.ai_client import create_extraction_client
+from scripts.extraction.batch_processor import BatchProcessor
+from scripts.extraction.templates.key_question_template import (
+    create_extraction_prompt,
+    validate,
+)
+
+
+def load_section_text(ctx: PipelineContext) -> str:
+    """Load the key questions section text."""
+    # Try markdown first
+    md_path = ctx.section_md_path("key_questions_picots")
+    if md_path.exists():
+        with open(md_path, 'r', encoding='utf-8') as f:
+            return f.read()
+
+    # Try table data as fallback
+    table_path = ctx.table_path("table_a2_key_questions")
+    if table_path.exists():
+        with open(table_path) as f:
+            table_data = json.load(f)
+        # Format table rows as text
+        rows = table_data.get('data', [])
+        text_parts = []
+        for row in rows:
+            text_parts.append(" | ".join(str(v) for v in row.values() if v))
+        return "\n".join(text_parts)
+
+    # Try extracting text directly from PDF section
+    import fitz
+    section_cfg = ctx.config.sections.get('key_questions_picots')
+    if section_cfg and ctx.pdf_path.exists():
+        doc = fitz.open(str(ctx.pdf_path))
+        text_parts = []
+        for page_num in range(section_cfg.start_page - 1, min(section_cfg.end_page, len(doc))):
+            text_parts.append(doc[page_num].get_text("text"))
+        doc.close()
+        return "\n".join(text_parts)
+
+    raise FileNotFoundError(
+        "Key questions section text not found. "
+        "Run split_sections.py and convert_to_markdown.py first."
+    )
+
+
+def process_kq_batch(batch_text: list, client, config) -> list:
+    """Process key question text through the LLM."""
+    # For KQs, we send all text at once (only 12 KQs)
+    combined_text = "\n\n".join(batch_text)
+    prompt = create_extraction_prompt(combined_text, config)
+    result = client.extract(prompt, max_tokens=8192)
+
+    if isinstance(result, dict) and 'key_questions' in result:
+        result = result['key_questions']
+    if not isinstance(result, list):
+        result = [result]
+
+    return result
+
+
+def run(config_path: str, resume: bool = True):
+    """Run key question extraction pipeline."""
+    config = load_config(config_path)
+    ctx = PipelineContext(config)
+    ctx.ensure_directories()
+
+    print("=" * 60)
+    print("EXTRACTING KEY QUESTIONS")
+    print("=" * 60)
+
+    # Load section text
+    print("Loading key questions section text...")
+    section_text = load_section_text(ctx)
+    print(f"  Loaded {len(section_text)} characters")
+
+    expected = config.expected_counts.get('key_questions', '?')
+    print(f"  Expected: {expected} key questions")
+
+    # Initialize AI client
+    print(f"Initializing {config.extraction.llm_provider} client...")
+    client = create_extraction_client(config.extraction.llm_provider)
+
+    # For KQs (small set), process in a single batch
+    # Split text into chunks for the batch processor interface
+    # but effectively process all at once
+    text_chunks = [section_text]
+
+    checkpoint_dir = str(ctx.checkpoint_path("key_questions"))
+    processor = BatchProcessor(
+        batch_size=1,
+        checkpoint_dir=checkpoint_dir,
+        output_file=str(ctx.key_questions_json),
+        task_name="key_questions",
+    )
+
+    def process_batch(batch):
+        return process_kq_batch(batch, client, config)
+
+    results, errors = processor.process(text_chunks, process_batch, resume=resume)
+
+    # Validate
+    print("\nValidating extracted key questions...")
+    valid_count = 0
+    invalid_items = []
+    for i, kq in enumerate(results):
+        is_valid, errs = validate(kq)
+        if is_valid:
+            valid_count += 1
+        else:
+            invalid_items.append({'index': i, 'kq_number': kq.get('kq_number'), 'errors': errs})
+
+    print(f"  Valid: {valid_count}/{len(results)}")
+    if invalid_items:
+        print(f"  Invalid: {len(invalid_items)}")
+        for item in invalid_items:
+            print(f"    KQ {item['kq_number']}: {item['errors']}")
+
+    # Save report
+    report = {
+        'total_extracted': len(results),
+        'valid': valid_count,
+        'invalid': len(invalid_items),
+        'invalid_items': invalid_items,
+    }
+    report_path = ctx.validation_report_path('key_questions')
+    with open(report_path, 'w') as f:
+        json.dump(report, f, indent=2)
+    print(f"\nValidation report saved to {report_path}")
+
+    print("\nKey question extraction complete")
+    return results
+
+
+def main():
+    """CLI entry point."""
+    import argparse
+    parser = argparse.ArgumentParser(description="Extract key questions from CPG")
+    parser.add_argument('--config', required=True, help="Path to guideline YAML config")
+    parser.add_argument('--no-resume', action='store_true', help="Start fresh")
+    args = parser.parse_args()
+    run(args.config, resume=not args.no_resume)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,286 @@
+{
+  "schema_version": "1.0",
+  "node_types": [
+    {
+      "label": "Guideline",
+      "description": "Top-level container for a disease/condition-specific clinical practice guideline",
+      "primary_key": "guideline_id",
+      "properties": [
+        {"name": "guideline_id", "type": "String", "required": true, "unique": true},
+        {"name": "disease_condition", "type": "String", "required": true},
+        {"name": "version", "type": "String", "required": true},
+        {"name": "publication_date", "type": "Date", "required": true},
+        {"name": "review_cycle_months", "type": "Integer", "required": false},
+        {"name": "status", "type": "String", "required": true, "enum": ["Active", "Superseded", "Under Review"]},
+        {"name": "organization", "type": "String", "required": true},
+        {"name": "full_title", "type": "String", "required": true},
+        {"name": "scope_description", "type": "String", "required": false}
+      ]
+    },
+    {
+      "label": "ClinicalModule",
+      "description": "Major topic areas within a guideline",
+      "primary_key": "module_id",
+      "properties": [
+        {"name": "module_id", "type": "String", "required": true, "unique": true},
+        {"name": "module_name", "type": "String", "required": true},
+        {"name": "description", "type": "String", "required": false},
+        {"name": "guideline_id", "type": "String", "required": true},
+        {"name": "sequence_order", "type": "Integer", "required": false}
+      ]
+    },
+    {
+      "label": "KeyQuestion",
+      "description": "PICOTS-based research questions that guide systematic evidence review",
+      "primary_key": "kq_id",
+      "properties": [
+        {"name": "kq_id", "type": "String", "required": true, "unique": true},
+        {"name": "kq_number", "type": "Integer", "required": true},
+        {"name": "question_text", "type": "String", "required": true},
+        {"name": "population", "type": "String", "required": true},
+        {"name": "intervention", "type": "String", "required": true},
+        {"name": "comparator", "type": "String", "required": false},
+        {"name": "outcomes_critical", "type": "List[String]", "required": true},
+        {"name": "outcomes_important", "type": "List[String]", "required": false},
+        {"name": "timing", "type": "String", "required": false},
+        {"name": "setting", "type": "String", "required": false},
+        {"name": "module_id", "type": "String", "required": true},
+        {"name": "guideline_id", "type": "String", "required": true}
+      ]
+    },
+    {
+      "label": "EvidenceBody",
+      "description": "Synthesized evidence from multiple studies addressing a key question",
+      "primary_key": "evidence_id",
+      "properties": [
+        {"name": "evidence_id", "type": "String", "required": true, "unique": true},
+        {"name": "topic", "type": "String", "required": true},
+        {"name": "quality_rating", "type": "String", "required": true, "enum": ["High", "Moderate", "Low", "Very Low"]},
+        {"name": "confidence_level", "type": "String", "required": true},
+        {"name": "num_studies", "type": "Integer", "required": true},
+        {"name": "study_types", "type": "List[String]", "required": true},
+        {"name": "date_synthesized", "type": "Date", "required": true},
+        {"name": "population_description", "type": "String", "required": true},
+        {"name": "key_findings", "type": "String", "required": true},
+        {"name": "guideline_id", "type": "String", "required": true},
+        {"name": "kq_id", "type": "String", "required": true},
+        {"name": "version", "type": "String", "required": true}
+      ]
+    },
+    {
+      "label": "Study",
+      "description": "Individual research study (RCT, systematic review, observational study)",
+      "primary_key": "study_id",
+      "properties": [
+        {"name": "study_id", "type": "String", "required": true, "unique": true},
+        {"name": "pmid", "type": "String", "required": false},
+        {"name": "doi", "type": "String", "required": false},
+        {"name": "title", "type": "String", "required": true},
+        {"name": "authors", "type": "String", "required": true},
+        {"name": "journal", "type": "String", "required": true},
+        {"name": "year", "type": "Integer", "required": true},
+        {"name": "study_type", "type": "String", "required": true, "enum": ["RCT", "Systematic Review", "Cohort", "Cross-sectional"]},
+        {"name": "study_quality", "type": "String", "required": true, "enum": ["Good", "Fair", "Poor"]},
+        {"name": "sample_size", "type": "Integer", "required": false},
+        {"name": "duration_weeks", "type": "Integer", "required": false},
+        {"name": "setting", "type": "String", "required": false},
+        {"name": "country", "type": "String", "required": false},
+        {"name": "abstract", "type": "String", "required": false}
+      ]
+    },
+    {
+      "label": "Recommendation",
+      "description": "Clinical action statement derived from evidence",
+      "primary_key": "rec_id",
+      "properties": [
+        {"name": "rec_id", "type": "String", "required": true, "unique": true},
+        {"name": "rec_number", "type": "Integer", "required": true},
+        {"name": "rec_text", "type": "String", "required": true},
+        {"name": "strength", "type": "String", "required": true, "enum": ["Strong", "Weak"]},
+        {"name": "direction", "type": "String", "required": true, "enum": ["For", "Against", "Neither"]},
+        {"name": "category", "type": "String", "required": true, "enum": ["New-added", "New-replaced", "Not changed", "Amended", "Deleted"]},
+        {"name": "topic", "type": "String", "required": true},
+        {"name": "subtopic", "type": "String", "required": false},
+        {"name": "module_id", "type": "String", "required": true},
+        {"name": "guideline_id", "type": "String", "required": true},
+        {"name": "version", "type": "String", "required": true},
+        {"name": "version_date", "type": "Date", "required": true},
+        {"name": "previous_version_id", "type": "String", "required": false},
+        {"name": "status", "type": "String", "required": true, "enum": ["Active", "Superseded", "Under Review"]},
+        {"name": "implementation_considerations", "type": "String", "required": false},
+        {"name": "embedding", "type": "List[Float]", "required": false}
+      ]
+    },
+    {
+      "label": "ClinicalScenario",
+      "description": "Point-of-care clinical context that triggers specific recommendations",
+      "primary_key": "scenario_id",
+      "properties": [
+        {"name": "scenario_id", "type": "String", "required": true, "unique": true},
+        {"name": "name", "type": "String", "required": true},
+        {"name": "description", "type": "String", "required": true},
+        {"name": "prevalence", "type": "String", "required": false, "enum": ["Common", "Uncommon", "Rare"]},
+        {"name": "urgency", "type": "String", "required": false, "enum": ["Emergency", "Urgent", "Routine"]},
+        {"name": "decision_points", "type": "List[String]", "required": false},
+        {"name": "guideline_id", "type": "String", "required": true},
+        {"name": "embedding", "type": "List[Float]", "required": false}
+      ]
+    },
+    {
+      "label": "Intervention",
+      "description": "Treatment, action, or therapy that can be recommended",
+      "primary_key": "intervention_id",
+      "properties": [
+        {"name": "intervention_id", "type": "String", "required": true, "unique": true},
+        {"name": "name", "type": "String", "required": true},
+        {"name": "generic_name", "type": "String", "required": false},
+        {"name": "drug_class", "type": "String", "required": false},
+        {"name": "type", "type": "String", "required": true, "enum": ["Pharmacologic", "Non-pharmacologic", "Procedural"]},
+        {"name": "mechanism", "type": "String", "required": false},
+        {"name": "typical_dose", "type": "String", "required": false},
+        {"name": "administration", "type": "String", "required": false},
+        {"name": "cost_category", "type": "String", "required": false, "enum": ["Low", "Moderate", "High"]},
+        {"name": "availability", "type": "String", "required": false},
+        {"name": "embedding", "type": "List[Float]", "required": false}
+      ]
+    },
+    {
+      "label": "Outcome",
+      "description": "Measured clinical endpoint (neutral/general category)",
+      "primary_key": "outcome_id",
+      "properties": [
+        {"name": "outcome_id", "type": "String", "required": true, "unique": true},
+        {"name": "name", "type": "String", "required": true},
+        {"name": "description", "type": "String", "required": true},
+        {"name": "measurement_method", "type": "String", "required": false},
+        {"name": "criticality", "type": "String", "required": true, "enum": ["Critical", "Important", "Limited"]},
+        {"name": "outcome_category", "type": "String", "required": false}
+      ]
+    },
+    {
+      "label": "OutcomeMeasurement",
+      "description": "Specific measurement of an outcome in a particular study",
+      "primary_key": "measurement_id",
+      "properties": [
+        {"name": "measurement_id", "type": "String", "required": true, "unique": true},
+        {"name": "study_id", "type": "String", "required": true},
+        {"name": "outcome_id", "type": "String", "required": true},
+        {"name": "intervention_id", "type": "String", "required": true},
+        {"name": "comparator_id", "type": "String", "required": false},
+        {"name": "value", "type": "String", "required": true},
+        {"name": "value_numeric", "type": "Float", "required": false},
+        {"name": "unit", "type": "String", "required": false},
+        {"name": "timeframe", "type": "String", "required": true},
+        {"name": "statistical_significance", "type": "String", "required": false},
+        {"name": "effect_size", "type": "String", "required": false}
+      ]
+    },
+    {
+      "label": "Benefit",
+      "description": "Positive effect or desirable outcome from an intervention",
+      "primary_key": "benefit_id",
+      "properties": [
+        {"name": "benefit_id", "type": "String", "required": true, "unique": true},
+        {"name": "name", "type": "String", "required": true},
+        {"name": "description", "type": "String", "required": true},
+        {"name": "magnitude", "type": "String", "required": false},
+        {"name": "magnitude_type", "type": "String", "required": false, "enum": ["Absolute", "Relative", "NNT"]},
+        {"name": "criticality", "type": "String", "required": true, "enum": ["Critical", "Important", "Limited"]},
+        {"name": "timeframe", "type": "String", "required": false},
+        {"name": "confidence", "type": "String", "required": false, "enum": ["High", "Moderate", "Low"]},
+        {"name": "clinical_significance", "type": "String", "required": true}
+      ]
+    },
+    {
+      "label": "AdverseEvent",
+      "description": "Harm, negative effect, or undesirable outcome from an intervention",
+      "primary_key": "ae_id",
+      "properties": [
+        {"name": "ae_id", "type": "String", "required": true, "unique": true},
+        {"name": "name", "type": "String", "required": true},
+        {"name": "description", "type": "String", "required": true},
+        {"name": "severity", "type": "String", "required": true, "enum": ["Mild", "Moderate", "Severe", "Life-threatening"]},
+        {"name": "frequency", "type": "String", "required": false},
+        {"name": "frequency_type", "type": "String", "required": false, "enum": ["Percentage", "Per patient-years", "Absolute number"]},
+        {"name": "onset", "type": "String", "required": false},
+        {"name": "duration", "type": "String", "required": false},
+        {"name": "management", "type": "String", "required": false},
+        {"name": "criticality", "type": "String", "required": true, "enum": ["Critical", "Important", "Limited"]},
+        {"name": "reversibility", "type": "String", "required": false, "enum": ["Reversible", "Irreversible", "Variable"]}
+      ]
+    },
+    {
+      "label": "PatientPopulation",
+      "description": "Target demographic group for a recommendation or study",
+      "primary_key": "population_id",
+      "properties": [
+        {"name": "population_id", "type": "String", "required": true, "unique": true},
+        {"name": "name", "type": "String", "required": true},
+        {"name": "description", "type": "String", "required": true},
+        {"name": "age_range", "type": "String", "required": false},
+        {"name": "inclusion_criteria", "type": "List[String]", "required": true},
+        {"name": "exclusion_criteria", "type": "List[String]", "required": false},
+        {"name": "prevalence_description", "type": "String", "required": false},
+        {"name": "guideline_id", "type": "String", "required": true}
+      ]
+    },
+    {
+      "label": "PatientCharacteristic",
+      "description": "Specific patient attribute that modifies treatment decisions",
+      "primary_key": "characteristic_id",
+      "properties": [
+        {"name": "characteristic_id", "type": "String", "required": true, "unique": true},
+        {"name": "name", "type": "String", "required": true},
+        {"name": "description", "type": "String", "required": true},
+        {"name": "type", "type": "String", "required": true, "enum": ["Comorbidity", "Risk Factor", "Demographic", "Laboratory", "Functional Status"]},
+        {"name": "prevalence_in_population", "type": "String", "required": false},
+        {"name": "clinical_impact", "type": "String", "required": false, "enum": ["High", "Moderate", "Low"]},
+        {"name": "modifies_treatment", "type": "Boolean", "required": true},
+        {"name": "measurement_method", "type": "String", "required": false}
+      ]
+    },
+    {
+      "label": "Contraindication",
+      "description": "Warning or contraindication for an intervention",
+      "primary_key": "contraindication_id",
+      "properties": [
+        {"name": "contraindication_id", "type": "String", "required": true, "unique": true},
+        {"name": "type", "type": "String", "required": true, "enum": ["Absolute", "Relative", "Precaution"]},
+        {"name": "condition", "type": "String", "required": true},
+        {"name": "rationale", "type": "String", "required": true},
+        {"name": "evidence_quality", "type": "String", "required": false},
+        {"name": "alternative_actions", "type": "String", "required": false},
+        {"name": "severity", "type": "String", "required": true, "enum": ["Critical", "Important", "Minor"]}
+      ]
+    },
+    {
+      "label": "QualityAssessment",
+      "description": "GRADE evaluation component for evidence quality",
+      "primary_key": "assessment_id",
+      "properties": [
+        {"name": "assessment_id", "type": "String", "required": true, "unique": true},
+        {"name": "evidence_body_id", "type": "String", "required": true},
+        {"name": "domain", "type": "String", "required": true, "enum": ["Risk of Bias", "Consistency", "Directness", "Precision", "Publication Bias"]},
+        {"name": "rating", "type": "String", "required": true, "enum": ["No serious issues", "Serious", "Very serious"]},
+        {"name": "direction", "type": "String", "required": true, "enum": ["Downgrade", "Upgrade", "No change"]},
+        {"name": "justification", "type": "String", "required": true},
+        {"name": "assessor", "type": "String", "required": false},
+        {"name": "assessment_date", "type": "Date", "required": true}
+      ]
+    },
+    {
+      "label": "DecisionFramework",
+      "description": "GRADE evidence-to-recommendation reasoning (4 domains)",
+      "primary_key": "framework_id",
+      "properties": [
+        {"name": "framework_id", "type": "String", "required": true, "unique": true},
+        {"name": "recommendation_id", "type": "String", "required": true},
+        {"name": "confidence_in_evidence", "type": "String", "required": true, "enum": ["High", "Moderate", "Low", "Very Low"]},
+        {"name": "balance_of_outcomes", "type": "String", "required": true},
+        {"name": "patient_values", "type": "String", "required": true},
+        {"name": "other_implications", "type": "String", "required": true},
+        {"name": "overall_judgment", "type": "String", "required": true}
+      ]
+    }
+  ]
+}

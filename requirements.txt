@@ -1,0 +1,35 @@
+# HiGraph-CPG Dependencies
+
+# PDF Processing
+PyMuPDF>=1.23.0          # Fast PDF operations, splitting
+pdfplumber>=0.10.0       # Best table extraction
+# marker-pdf>=0.2.0      # PDF to markdown conversion (optional; requires Python <=3.13,
+#                          # fails on 3.14 due to Pillow/regex build issues.
+#                          # Code falls back to PyMuPDF if marker-pdf is unavailable.)
+
+# Data Processing
+jsonschema>=4.20.0       # JSON validation
+python-dotenv>=1.0.0     # Environment variable management
+pyyaml>=6.0.0            # Pipeline configuration files
+
+# AI/LLM
+anthropic>=0.7.0         # Claude API (recommended)
+# openai>=1.0.0          # GPT-4 API (alternative, uncomment if using)
+
+# PubMed API
+biopython>=1.81          # PubMed E-utilities
+
+# Neo4j
+neo4j>=5.14.0            # Neo4j Python driver
+
+# Text Processing
+scikit-learn>=1.3.0      # Cosine similarity for relationship inference
+numpy>=1.24.0            # Numerical operations
+# Note: Embeddings generated server-side via Neo4j GenAI plugin + OpenAI.
+# No sentence-transformers or openai SDK needed for embeddings.
+
+# Testing
+pytest>=7.0.0            # Test framework
+
+# Utilities
+tqdm>=4.66.0             # Progress bars
