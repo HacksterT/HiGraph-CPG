@@ -10,50 +10,30 @@
 
 **Context**: This is Phase 2 of HiGraph-CPG. Phase 1 (foundation with schema and infrastructure) must be complete before starting this PRD.
 
-**Implementation**: Config-driven pipeline scripts are implemented but were not used for initial data population. Instead, Phase 2 was completed using **manual extraction** — see `tasks/prd-manual-extraction.md`.
+**Implementation**: Config-driven pipeline implemented. See `tasks/extraction-strategy.md` for technical architecture. Run via `python scripts/pipeline/run_pipeline.py --config configs/guidelines/diabetes-t2-2023.yaml`.
 
 ---
 
-## Completion Note (February 5, 2026)
+## Resume Point (February 4, 2026)
 
-**Phase 2 is COMPLETE** — but via manual extraction rather than the automated pipeline.
+All 48 pipeline scripts are written and syntax-verified. **No pipeline stages have been executed yet.** The next session should run the pipeline against the actual diabetes CPG PDF.
 
-### What Happened
+**Before running anything:**
 
-The automated pipeline scripts were written and syntax-verified, but when we attempted to run them:
-1. LLM API token consumption was higher than expected
-2. Table extraction from the PDF produced inconsistent results
-3. We pivoted to having Claude directly read and extract data from the PDF
+1. Activate the virtual environment: `.\.venv\Scripts\Activate.ps1` (PowerShell) or `.\.venv\Scripts\activate.bat` (CMD)
+2. Verify Neo4j is running: `docker-compose up -d`
+3. Verify the PDF exists at `docs/source-guidelines/VADOD-Diabetes-CPG_Final_508.pdf`
+4. Verify `.env` has `ANTHROPIC_API_KEY`, `NEO4J_*`, `OPENAI_API_KEY`, `PUBMED_API_KEY`
 
-### How Phase 2 Was Actually Completed
+**Then follow the Next Steps section at the bottom of this document** — run stages incrementally with human review checkpoints between each group. **Do NOT skip the review checkpoints.** Each one prevents a specific class of error from compounding downstream.
 
-See **`tasks/prd-manual-extraction.md`** for the complete execution log. In summary:
-- Claude read the PDF section-by-section using stair-stepping (3-5 pages at a time)
-- Extracted entities directly into JSON files
-- Used `scripts/pubmed/fetch_metadata.py` to enrich studies with abstracts and MeSH terms
-- Used `scripts/graph_population/populate_*.py` scripts to load data into Neo4j
+**Key files for context:**
 
-### Final Result
-
-| Entity Type | Count |
-|-------------|-------|
-| Guideline | 1 |
-| ClinicalModule | 9 |
-| Recommendation | 26 |
-| KeyQuestion | 12 |
-| EvidenceBody | 12 |
-| Study | 154 |
-| **Total Nodes** | **214** |
-| **Total Relationships** | **195** |
-
-### Pipeline Scripts — Still Available
-
-The automated pipeline remains available for future guidelines at `scripts/pipeline/run_pipeline.py`. The manual extraction was a one-time bootstrap; the pipeline may be preferred for subsequent guidelines.
-
-**Key documentation:**
-- `tasks/manual-extraction-strategy.md` — Documents the manual approach used
-- `tasks/prd-manual-extraction.md` — Execution checklist and final state
-- `tasks/extraction-strategy.md` — Original pipeline architecture (for reference)
+- `tasks/human-review-guide.md` — **Detailed instructions for each review checkpoint** (what to look at, what to compare against, pass/fail thresholds, what to do if it fails)
+- `configs/guidelines/diabetes-t2-2023.yaml` — all page ranges, column mappings, expected counts
+- `scripts/pipeline/run_pipeline.py` — 12-stage orchestrator (`--start-from` / `--stop-after`)
+- `tasks/extraction-strategy.md` — full pipeline architecture and design rationale
+- `README.md` — setup, usage, and "adding a new guideline" guide
 
 ---
 
@@ -301,12 +281,14 @@ The automated pipeline remains available for future guidelines at `scripts/pipel
 ## Dependencies
 
 ### Internal
+
 - Phase 1 (Foundation) complete with Neo4j running and schema defined
 - Python 3.10+ environment (3.14 works except marker-pdf)
 - Neo4j Python driver installed
 - Virtual environment at `.venv/`
 
 ### External
+
 - VA/DoD Type 2 Diabetes CPG PDF (165 pages, May 2023 version)
 - PubMed E-utilities API access (API key obtained, 10 req/sec)
 - LLM API access (Claude or GPT-4) with API key
@@ -348,6 +330,7 @@ The automated pipeline remains available for future guidelines at `scripts/pipel
 ## Appendix
 
 ### Directory Structure (Implemented)
+
 ```
 HiGraph-CPG/
 ├── configs/
@@ -418,6 +401,7 @@ HiGraph-CPG/
 ```
 
 ### Current requirements.txt
+
 ```
 PyMuPDF>=1.23.0          # PDF operations, splitting
 pdfplumber>=0.10.0       # Table extraction
@@ -441,49 +425,61 @@ tqdm>=4.66.0             # Progress bars
 All backend scripts are implemented. The next milestone is running the pipeline end-to-end on the diabetes CPG PDF. **Each step requires a human review before proceeding to the next.** See `tasks/human-review-guide.md` for detailed review instructions at each checkpoint.
 
 ### Step 1: Preprocessing
+
 ```bash
 python scripts/pipeline/run_pipeline.py --config configs/guidelines/diabetes-t2-2023.yaml --stop-after preprocess
 ```
+
 **STOP — Human Review (Checkpoint A)**: Open the extracted tables and compare against the PDF. Verify Table 5 rows look correct, column names are recognized, and markdown sections are readable. This catches PDF parsing errors before spending LLM API credits. See `tasks/human-review-guide.md` Checkpoint A for detailed instructions.
 
 ### Step 2: Recommendation Extraction
+
 ```bash
 python scripts/pipeline/run_pipeline.py --config configs/guidelines/diabetes-t2-2023.yaml \
   --start-from extract_metadata --stop-after extract_recommendations
 ```
+
 **STOP — Human Review (Checkpoint B1)**: Sample 10 random recommendations from the JSON output. Compare each against the PDF. Verify rec_text is verbatim, strength/direction are correct, topics match. Requirement: >95% accuracy. See `tasks/human-review-guide.md` Checkpoint B1.
 
 ### Step 3: Key Question Extraction
+
 ```bash
 python scripts/pipeline/run_pipeline.py --config configs/guidelines/diabetes-t2-2023.yaml \
   --start-from extract_key_questions --stop-after extract_key_questions
 ```
+
 **STOP — Human Review (Checkpoint B2)**: Review all 12 key questions. Verify PICOTS elements are complete and accurate. Requirement: 100% accuracy. See `tasks/human-review-guide.md` Checkpoint B2.
 
 ### Step 4: Evidence Body + Study Extraction + PubMed
+
 ```bash
 python scripts/pipeline/run_pipeline.py --config configs/guidelines/diabetes-t2-2023.yaml \
   --start-from extract_evidence_bodies --stop-after fetch_metadata
 ```
+
 **STOP — Human Review (Checkpoint B3)**: Check evidence body count (12), GRADE ratings, PMID resolution rate (>90%), and spot-check 5 resolved PMIDs on PubMed. See `tasks/human-review-guide.md` Checkpoint B3.
 
 ### Step 5: Relationship Inference
+
 ```bash
 python scripts/pipeline/run_pipeline.py --config configs/guidelines/diabetes-t2-2023.yaml \
   --start-from build_relationships --stop-after build_relationships
 ```
+
 **STOP — Human Review (Checkpoint C)**: Review low-confidence links in `manual_review/`. Trace 2-3 sample evidence chains end-to-end. Requirement: <10 flagged items. See `tasks/human-review-guide.md` Checkpoint C.
 
 ### Step 6: Graph Population + Validation
+
 ```bash
 python scripts/pipeline/run_pipeline.py --config configs/guidelines/diabetes-t2-2023.yaml \
   --start-from populate_graph
 ```
+
 **STOP — Human Review (Checkpoint D)**: Verify node counts in Neo4j Browser, run sample traversal queries, test embedding search. See `tasks/human-review-guide.md` Checkpoint D.
 
 ---
 
-**Document Version**: 2.1
+**Document Version**: 2.0
 **Created**: February 4, 2026
-**Last Updated**: February 5, 2026
-**Status**: ✅ COMPLETE (via manual extraction — see `tasks/prd-manual-extraction.md`)
+**Last Updated**: February 4, 2026
+**Status**: Implementation Complete — Awaiting First Pipeline Run

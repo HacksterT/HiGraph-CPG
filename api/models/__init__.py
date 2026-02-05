@@ -1,5 +1,16 @@
 """Pydantic models for API requests and responses."""
 
+from api.models.query import (
+    ExtractedEntities,
+    Intent,
+    QueryReasoningBlock,
+    QueryRequest,
+    QueryResponse,
+    QueryResult,
+    QueryType,
+    RoutingDecision,
+    TimingInfo,
+)
 from api.models.search import (
     ClinicalModuleResult,
     EvidenceBodyResult,
@@ -23,6 +34,8 @@ from api.models.search import (
 __all__ = [
     # Enums
     "NodeType",
+    "QueryType",
+    "Intent",
     # Vector Search
     "VectorSearchRequest",
     "SearchResult",
@@ -38,4 +51,12 @@ __all__ = [
     "GraphSearchResponse",
     "GraphReasoningBlock",
     "TemplateInfo",
+    # Unified Query
+    "QueryRequest",
+    "QueryResponse",
+    "QueryResult",
+    "QueryReasoningBlock",
+    "RoutingDecision",
+    "ExtractedEntities",
+    "TimingInfo",
 ]

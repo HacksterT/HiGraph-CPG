@@ -4,8 +4,8 @@
 
 This document defines the API architecture for the HiGraph-CPG query service. The service provides semantic and structural search over the clinical practice guideline knowledge graph.
 
-**Status**: Design — to be implemented in Phase 3
-**Related**: `tasks/query-strategy.md` (retrieval architecture), `tasks/prd-query-api.md` (implementation PRD)
+**Status**: ✅ Implemented (Phase 3 complete)
+**Related**: `tasks/prd-query-api.md` (implementation PRD)
 
 ---
 
@@ -73,12 +73,16 @@ This document defines the API architecture for the HiGraph-CPG query service. Th
 
 **Decision**: Use clinical rule-based re-ranking for MVP
 
-**Rules**:
+**Rules** (implemented in `api/services/reranker.py`):
 | Condition | Multiplier |
 |-----------|------------|
 | `strength = "Strong"` | 1.2x |
-| `quality_rating = "High"` | 1.1x |
-| `status = "Active"` | Required (filter out Superseded) |
+| `strength = "Weak"` | 1.0x |
+| `strength = "Neither for nor against"` | 0.9x |
+| `quality_rating = "High"` | 1.15x |
+| `quality_rating = "Moderate"` | 1.05x |
+| `quality_rating = "Low"` | 0.95x |
+| `direction = "For"` | 1.05x |
 
 **Rationale**:
 - Zero additional latency
@@ -106,9 +110,9 @@ This document defines the API architecture for the HiGraph-CPG query service. Th
 │  Input: Natural language question                                │
 │  Output: {query_type, entities, template_hint}                   │
 │                                                                  │
-│  Model: Claude 3.5 Sonnet                                        │
-│  Cost: ~$0.005 per query                                         │
-│  Latency: ~200-400ms                                             │
+│  Model: Claude 3.5 Haiku (fast, low cost)                        │
+│  Cost: ~$0.001 per query                                         │
+│  Latency: ~150-300ms                                             │
 └────────────────────────────┬────────────────────────────────────┘
                              │
            ┌─────────────────┼─────────────────┐
@@ -156,13 +160,14 @@ Health check endpoint.
 
 ### POST /api/v1/search/vector
 
-Direct vector similarity search.
+Direct vector similarity search. Supports 5 node types: Recommendation, Study, KeyQuestion, EvidenceBody, ClinicalModule.
 
 **Request**:
 ```json
 {
   "query": "medications for diabetic kidney disease",
-  "top_k": 10
+  "top_k": 10,
+  "node_type": "Recommendation"
 }
 ```
 
@@ -171,7 +176,8 @@ Direct vector similarity search.
 {
   "results": [
     {
-      "rec_id": "CPG_DM_2023_REC_019",
+      "node_type": "Recommendation",
+      "rec_id": "REC_019",
       "rec_text": "For adults with T2DM and established ASCVD...",
       "strength": "Strong",
       "direction": "For",
@@ -183,7 +189,9 @@ Direct vector similarity search.
     "path_used": "vector",
     "embedding_time_ms": 89,
     "search_time_ms": 45,
-    "total_time_ms": 134
+    "total_time_ms": 134,
+    "node_type_searched": "Recommendation",
+    "results_count": 1
   }
 }
 ```
@@ -247,35 +255,56 @@ Unified endpoint with automatic routing.
 ```json
 {
   "question": "What should I prescribe for a diabetic patient with CKD?",
-  "include_evidence_chain": false
+  "include_studies": false,
+  "top_k": 10
 }
 ```
 
 **Response**:
 ```json
 {
-  "results": [...],
+  "results": [
+    {
+      "rec_id": "REC_022",
+      "rec_text": "For adults with type 2 diabetes mellitus and chronic kidney disease...",
+      "strength": "Strong",
+      "direction": "For",
+      "topic": "Pharmacotherapy",
+      "score": 0.92,
+      "evidence_quality": "High",
+      "study_count": 34,
+      "source": "both"
+    }
+  ],
   "reasoning": {
-    "query_type": "HYBRID",
-    "path_used": ["vector", "graph"],
-    "entities_extracted": {
-      "condition": "diabetes",
-      "comorbidity": "CKD",
-      "intent": "treatment_recommendation"
+    "routing": {
+      "query_type": "HYBRID",
+      "intent": "treatment_recommendation",
+      "confidence": 0.95,
+      "entities": {
+        "conditions": ["type 2 diabetes", "CKD"],
+        "medications": [],
+        "patient_characteristics": [],
+        "rec_ids": [],
+        "topics": ["Pharmacotherapy"]
+      },
+      "template_hint": "recommendations_by_topic",
+      "reasoning": "Patient-specific treatment question with comorbidities"
     },
-    "template_used": "recommendation_with_evidence",
-    "vector_candidates": 20,
+    "paths_used": ["vector", "graph"],
+    "template_used": "recommendations_by_topic",
+    "vector_candidates": 10,
     "graph_candidates": 8,
     "fusion_method": "RRF",
-    "rerank_rules_applied": ["strength_boost", "quality_boost"],
-    "timing_ms": {
-      "routing": 245,
-      "embedding": 89,
-      "vector_search": 45,
-      "graph_search": 67,
-      "fusion": 3,
-      "rerank": 2,
-      "total": 451
+    "rerank_applied": true,
+    "timing": {
+      "routing_ms": 245,
+      "embedding_ms": 89,
+      "vector_search_ms": 45,
+      "graph_search_ms": 67,
+      "fusion_ms": 3,
+      "rerank_ms": 2,
+      "total_ms": 451
     }
   }
 }
@@ -522,6 +551,7 @@ def apply_reranking(results):
 
 ---
 
-**Document Version**: 1.0
+**Document Version**: 1.1
 **Created**: February 5, 2026
-**Status**: Design — implementation in Phase 3
+**Updated**: February 5, 2026
+**Status**: ✅ Implemented — Phase 3 complete

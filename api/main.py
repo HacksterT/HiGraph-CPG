@@ -7,8 +7,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api import __version__
 from api.config import get_settings
-from api.routers import search_router
+from api.routers import query_router, search_router
 from api.services.neo4j_service import get_neo4j_service
+from api.services.query_router import get_query_router
 
 
 @asynccontextmanager
@@ -26,6 +27,10 @@ async def lifespan(app: FastAPI):
     # Shutdown: close connections
     neo4j.close()
     print("Neo4j connection closed")
+
+    query_router_service = get_query_router()
+    query_router_service.close()
+    print("Query router connection closed")
 
 
 def create_app() -> FastAPI:
@@ -53,6 +58,7 @@ def create_app() -> FastAPI:
 
     # Include routers
     app.include_router(search_router)
+    app.include_router(query_router)
 
     return app
 

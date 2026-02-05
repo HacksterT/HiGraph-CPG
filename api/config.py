@@ -16,6 +16,12 @@ class Settings(BaseSettings):
     # OpenAI API (for embeddings via Neo4j GenAI plugin)
     openai_api_key: str
 
+    # Anthropic API (for query routing LLM)
+    anthropic_api_key: str
+
+    # Query router settings
+    router_model: str = "claude-3-5-haiku-20241022"  # Fast and cheap for routing
+
     # API settings
     api_title: str = "HiGraph-CPG Query API"
     api_version: str = "1.0.0"

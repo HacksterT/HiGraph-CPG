@@ -419,3 +419,129 @@ class TestGraphTemplatesEndpoint:
         assert "description" in rec_only
         assert "params" in rec_only
         assert any(p["name"] == "rec_ids" for p in rec_only["params"])
+
+
+# ============================================================
+# STORY-03: Unified Query Tests
+# ============================================================
+
+
+class TestUnifiedQueryEndpoint:
+    """Tests for POST /api/v1/query endpoint."""
+
+    def test_valid_query_returns_results(self, client):
+        """Valid query should return results with routing info."""
+        response = client.post(
+            "/api/v1/query",
+            json={"question": "What medications are recommended for diabetic patients with kidney disease?"}
+        )
+
+        if response.status_code == 503:
+            pytest.skip("Neo4j or LLM service not available")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        assert "results" in data
+        assert "reasoning" in data
+
+        # Check reasoning block structure
+        reasoning = data["reasoning"]
+        assert "routing" in reasoning
+        assert "paths_used" in reasoning
+        assert "timing" in reasoning
+
+        # Check routing decision structure
+        routing = reasoning["routing"]
+        assert routing["query_type"] in ["VECTOR", "GRAPH", "HYBRID"]
+        assert "intent" in routing
+        assert "confidence" in routing
+        assert "entities" in routing
+
+        # Check timing info
+        timing = reasoning["timing"]
+        assert "routing_ms" in timing
+        assert "total_ms" in timing
+
+    def test_query_result_structure(self, client):
+        """Query results should have required fields."""
+        response = client.post(
+            "/api/v1/query",
+            json={"question": "SGLT2 inhibitors for heart failure"}
+        )
+
+        if response.status_code == 503:
+            pytest.skip("Neo4j or LLM service not available")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        if data["results"]:
+            result = data["results"][0]
+            assert "rec_id" in result
+            assert "rec_text" in result
+            assert "score" in result
+            assert "source" in result
+            assert result["source"] in ["vector", "graph", "both"]
+
+    def test_query_respects_top_k(self, client):
+        """Query should respect top_k parameter."""
+        response = client.post(
+            "/api/v1/query",
+            json={"question": "diabetes treatment options", "top_k": 3}
+        )
+
+        if response.status_code == 503:
+            pytest.skip("Neo4j or LLM service not available")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["results"]) <= 3
+
+    def test_short_query_returns_422(self, client):
+        """Query shorter than 3 characters should return 422."""
+        response = client.post(
+            "/api/v1/query",
+            json={"question": "hi"}
+        )
+        assert response.status_code == 422
+
+    def test_missing_question_returns_422(self, client):
+        """Missing question field should return 422."""
+        response = client.post(
+            "/api/v1/query",
+            json={}
+        )
+        assert response.status_code == 422
+
+    def test_routing_returns_entities(self, client):
+        """Routing should extract relevant entities from the question."""
+        response = client.post(
+            "/api/v1/query",
+            json={"question": "What is the evidence for metformin in patients with type 2 diabetes and CKD?"}
+        )
+
+        if response.status_code == 503:
+            pytest.skip("Neo4j or LLM service not available")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        entities = data["reasoning"]["routing"]["entities"]
+        assert isinstance(entities, dict)
+        assert "conditions" in entities
+        assert "medications" in entities
+
+    def test_reranking_applied(self, client):
+        """Results should have re-ranking applied (rerank_applied=True)."""
+        response = client.post(
+            "/api/v1/query",
+            json={"question": "strong recommendations for glycemic control"}
+        )
+
+        if response.status_code == 503:
+            pytest.skip("Neo4j or LLM service not available")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["reasoning"]["rerank_applied"] is True
