@@ -15,19 +15,27 @@ from api.models.query import (
 )
 
 # Router prompt template
-ROUTER_PROMPT = """You are a query router for a clinical practice guideline knowledge graph about Type 2 Diabetes.
+ROUTER_PROMPT = """You are a query router for a clinical guideline knowledge graph (Type 2 Diabetes).
 
-Your job is to analyze the user's question and decide the best retrieval strategy:
-- VECTOR: ONLY for vague, open-ended questions without specific conditions, medications, or topics (e.g., "Tell me about diabetes management", "What should I know?")
-- GRAPH: For ANY question mentioning specific conditions, medications, interventions, topics, recommendation IDs, or care phases (e.g., "What about CKD?", "SGLT2 options?", "What interventions for kidney disease?", "Pharmacotherapy recommendations?")
-- HYBRID: For complex patient scenarios with MULTIPLE conditions or characteristics (e.g., "Patient with CKD AND heart failure", "Elderly patient with kidney disease and cardiovascular risk")
+## Routing Rules
 
-IMPORTANT: Prefer GRAPH over VECTOR when the question mentions ANY of these:
-- Conditions/comorbidities: CKD, kidney disease, CVD, heart failure, retinopathy, neuropathy, etc.
-- Medications/interventions: metformin, SGLT2, GLP-1, insulin, lifestyle, etc.
-- Topics: pharmacotherapy, glycemic control, screening, self-management
-- Care phases: treatment, diagnosis, screening, prevention, follow-up
-- Specific allergies or contraindications to medications
+**VECTOR** - Conceptual/general questions seeking broad understanding
+- Keywords: "general", "considerations", "how does", "tell me about", "what should I know"
+- Examples: "General considerations for elderly diabetics?", "How do SGLT2 inhibitors work?"
+
+**GRAPH** - Specific lookup filtering by ONE entity (condition, medication, care phase, or ID)
+- Keywords: "recommend for [X]", "recommendations for [X]", "what about [X]", "guidelines for [X]"
+- Examples: "Recommendations for SGLT2?", "What about CKD patients?", "Screening recommendations?"
+
+**HYBRID** - Patient scenario with 2+ specific factors (multiple conditions, or condition + contraindication)
+- Keywords: "patient with [X] AND [Y]", "can't take", "allergic to", combined with conditions
+- Examples: "Patient with CKD and heart failure?", "CKD patient who can't take metformin?"
+
+## Decision Tree
+1. Count specific medical entities (conditions, medications, contraindications)
+2. If 0 entities OR question is conceptual → VECTOR
+3. If 1 entity AND asking for specific recommendations → GRAPH
+4. If 2+ entities OR patient scenario with constraints → HYBRID
 
 Available graph templates:
 - recommendation_only: Fetch specific recommendations by ID

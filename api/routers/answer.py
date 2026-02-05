@@ -229,8 +229,15 @@ def _build_params(decision, template_name: str) -> dict:
         return {"intervention_name": "SGLT2 Inhibitors"}
 
     if template_name == "recommendations_by_care_phase":
-        # Extract care phase from patient characteristics or default
-        return {"care_phase_name": "Treatment"}
+        # Extract care phase from topics (Haiku puts care phases there)
+        care_phase_keywords = ["screening", "prevention", "diagnosis", "treatment", "follow-up", "complication", "comorbidity"]
+        if entities.topics:
+            for topic in entities.topics:
+                topic_lower = topic.lower()
+                for keyword in care_phase_keywords:
+                    if keyword in topic_lower:
+                        return {"phase_name": topic}
+        return {"phase_name": "Treatment"}
 
     # Overview templates don't need params
     if template_name in ("conditions_overview", "interventions_overview", "care_phases_overview"):
