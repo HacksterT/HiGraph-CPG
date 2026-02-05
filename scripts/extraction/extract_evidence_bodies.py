@@ -62,7 +62,7 @@ def process_evidence_batch(batch_text: list, client, config) -> list:
     """Process evidence text through the LLM."""
     combined_text = "\n\n".join(batch_text)
     prompt = create_extraction_prompt(combined_text, config)
-    result = client.extract(prompt, max_tokens=8192)
+    result = client.extract(prompt, max_tokens=4096)
 
     if isinstance(result, dict) and 'evidence_bodies' in result:
         result = result['evidence_bodies']
@@ -91,7 +91,7 @@ def run(config_path: str, resume: bool = True):
 
     # Initialize AI client
     print(f"Initializing {config.extraction.llm_provider} client...")
-    client = create_extraction_client(config.extraction.llm_provider)
+    client = create_extraction_client(config.extraction.llm_provider, config.extraction.llm_model)
 
     # Process as single batch (small set)
     text_chunks = [section_text]

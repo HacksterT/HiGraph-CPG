@@ -201,13 +201,14 @@ class AIExtractionClient:
             raise
 
 
-def create_extraction_client(provider: str = None) -> AIExtractionClient:
+def create_extraction_client(provider: str = None, model: str = None) -> AIExtractionClient:
     """
     Factory function to create extraction client with defaults.
-    
+
     Args:
         provider: 'claude' or 'openai', defaults to Claude if available
-        
+        model: Model name, defaults based on provider if not specified
+
     Returns:
         Configured AIExtractionClient
     """
@@ -219,8 +220,8 @@ def create_extraction_client(provider: str = None) -> AIExtractionClient:
             provider = 'openai'
         else:
             raise ValueError("No API key found. Set ANTHROPIC_API_KEY or OPENAI_API_KEY")
-    
-    return AIExtractionClient(provider=provider)
+
+    return AIExtractionClient(provider=provider, model=model)
 
 
 # Export

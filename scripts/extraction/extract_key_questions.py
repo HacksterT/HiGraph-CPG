@@ -66,7 +66,7 @@ def process_kq_batch(batch_text: list, client, config) -> list:
     # For KQs, we send all text at once (only 12 KQs)
     combined_text = "\n\n".join(batch_text)
     prompt = create_extraction_prompt(combined_text, config)
-    result = client.extract(prompt, max_tokens=8192)
+    result = client.extract(prompt, max_tokens=4096)
 
     if isinstance(result, dict) and 'key_questions' in result:
         result = result['key_questions']
@@ -96,7 +96,7 @@ def run(config_path: str, resume: bool = True):
 
     # Initialize AI client
     print(f"Initializing {config.extraction.llm_provider} client...")
-    client = create_extraction_client(config.extraction.llm_provider)
+    client = create_extraction_client(config.extraction.llm_provider, config.extraction.llm_model)
 
     # For KQs (small set), process in a single batch
     # Split text into chunks for the batch processor interface

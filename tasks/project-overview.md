@@ -36,6 +36,7 @@ Current clinical practice guidelines face several critical limitations:
 ### Core Innovation
 
 Replace document-based guidelines with a **graph database** where:
+
 - Clinical knowledge is represented as interconnected entities (recommendations, evidence, studies, interventions, benefits, harms)
 - Relationships capture evidence chains, clinical logic, and decision reasoning
 - AI agents can traverse the graph to answer natural language questions
@@ -83,6 +84,7 @@ Replace document-based guidelines with a **graph database** where:
 ### 17 Primary Entity Types
 
 **Evidence & Methodology**:
+
 1. **Guideline** - Top-level container for disease-specific CPG
 2. **ClinicalModule** - Major topic areas (Pharmacotherapy, Screening, etc.)
 3. **KeyQuestion** - PICOTS-based research questions
@@ -121,17 +123,20 @@ Replace document-based guidelines with a **graph database** where:
 ## Project Phases
 
 ### Phase 1: Foundation (Current - PRD Part 1)
+
 **Duration**: 2-3 weeks  
 **Status**: In Planning
 
 **Deliverables**:
-- [ ] Neo4j Docker environment setup
-- [ ] Complete schema definition with constraints/indexes
-- [ ] Vector search capability configured
-- [ ] Example graph traversal patterns documented
-- [ ] Test data seeded for validation
+
+- [x] Neo4j Docker environment setup
+- [x] Complete schema definition with constraints/indexes
+- [x] Vector search capability configured
+- [x] Example graph traversal patterns documented
+- [x] Test data seeded for validation
 
 **Success Criteria**:
+
 - Neo4j running with <5s startup time
 - All 17 node types created with constraints
 - Vector similarity queries working
@@ -140,10 +145,12 @@ Replace document-based guidelines with a **graph database** where:
 ---
 
 ### Phase 2: Data Ingestion (Next PRD)
+
 **Duration**: 3-4 weeks  
 **Estimated Start**: After Phase 1 complete
 
 **Scope**:
+
 - Parse VA/DoD Type 2 Diabetes CPG PDF (165 pages)
 - Extract all 54 recommendations with metadata
 - Map 12 key questions with PICOTS elements
@@ -159,6 +166,7 @@ Replace document-based guidelines with a **graph database** where:
 2. **Metadata Enrichment** — Fetches structured data not available in the PDF: full abstracts, MeSH terms (standardized medical subject headings), publication types, author affiliations, and DOIs.
 
 This matters because:
+
 - **Abstracts** get embedded as vectors on Study nodes, enabling semantic search across the evidence base (e.g., "find studies about renal outcomes with SGLT2 inhibitors").
 - **MeSH terms** provide standardized vocabulary for precise filtering that free-text search cannot achieve.
 - **PMIDs** make studies linkable across guidelines. When the hypertension CPG and diabetes CPG both cite the same ACCORD trial, the shared PubMed cache recognizes it as one study — critical for Phase 6 (multi-disease) cross-guideline analysis.
@@ -166,6 +174,7 @@ This matters because:
 Without PubMed, Study nodes would contain only whatever text appeared in the PDF's reference list — incomplete, inconsistently formatted, and isolated from the broader literature.
 
 **Key Challenges**:
+
 - PDF parsing accuracy (tables, footnotes, references)
 - PMID resolution rate (target >90% of 103 studies)
 - Evidence chain linking validation
@@ -173,6 +182,7 @@ Without PubMed, Study nodes would contain only whatever text appeared in the PDF
 - Quality control and SME validation
 
 **Deliverables**:
+
 - [ ] PDF parsing pipeline
 - [ ] Data extraction scripts for each entity type
 - [ ] Graph population scripts with validation
@@ -181,6 +191,7 @@ Without PubMed, Study nodes would contain only whatever text appeared in the PDF
 - [ ] Complete diabetes guideline in graph
 
 **Success Metrics**:
+
 - 100% of 54 recommendations captured
 - >95% accuracy on manual validation sample
 - All evidence chains complete and verified
@@ -189,10 +200,12 @@ Without PubMed, Study nodes would contain only whatever text appeared in the PDF
 ---
 
 ### Phase 3: Query API & Interface (Future PRD)
+
 **Duration**: 3-4 weeks  
 **Estimated Start**: After Phase 2 complete
 
 **Scope**:
+
 - RESTful API for graph queries
 - GraphQL endpoint for flexible querying
 - Authentication and authorization
@@ -202,6 +215,7 @@ Without PubMed, Study nodes would contain only whatever text appeared in the PDF
 - Query performance optimization
 
 **Key Components**:
+
 - Python FastAPI or Flask application
 - JWT-based authentication
 - Redis for caching frequent queries
@@ -210,6 +224,7 @@ Without PubMed, Study nodes would contain only whatever text appeared in the PDF
 - API versioning strategy
 
 **Deliverables**:
+
 - [ ] REST API with core endpoints
 - [ ] GraphQL schema and resolver
 - [ ] API authentication system
@@ -219,6 +234,7 @@ Without PubMed, Study nodes would contain only whatever text appeared in the PDF
 - [ ] Performance benchmarks
 
 **Success Metrics**:
+
 - API response time <500ms for 95% of queries
 - 99.9% uptime
 - Comprehensive API documentation
@@ -227,10 +243,12 @@ Without PubMed, Study nodes would contain only whatever text appeared in the PDF
 ---
 
 ### Phase 4: Chatbot Integration (Future PRD)
+
 **Duration**: 4-5 weeks  
 **Estimated Start**: After Phase 3 complete
 
 **Scope**:
+
 - Natural language query understanding
 - LLM integration (GPT-4, Claude, or local model)
 - Context-aware response generation
@@ -240,6 +258,7 @@ Without PubMed, Study nodes would contain only whatever text appeared in the PDF
 - User feedback collection
 
 **Key Features**:
+
 - "What should I prescribe for newly diagnosed T2DM?" → Retrieves relevant recommendations
 - "What are the side effects of metformin?" → Lists adverse events with frequency
 - "Is SGLT-2i safe with eGFR 35?" → Safety check with contraindications
@@ -247,6 +266,7 @@ Without PubMed, Study nodes would contain only whatever text appeared in the PDF
 - Follow-up questions with conversation context
 
 **Deliverables**:
+
 - [ ] NLU pipeline for query understanding
 - [ ] LLM integration for response generation
 - [ ] Query → Cypher translation
@@ -257,6 +277,7 @@ Without PubMed, Study nodes would contain only whatever text appeared in the PDF
 - [ ] User testing and feedback system
 
 **Success Metrics**:
+>
 - >85% query understanding accuracy
 - Response relevance score >4/5 (user ratings)
 - All responses include evidence citations
@@ -266,10 +287,12 @@ Without PubMed, Study nodes would contain only whatever text appeared in the PDF
 ---
 
 ### Phase 5: Production Deployment (Future PRD)
+
 **Duration**: 2-3 weeks  
 **Estimated Start**: After Phase 4 complete
 
 **Scope**:
+
 - Production infrastructure setup
 - Load balancing and scaling
 - Backup and disaster recovery
@@ -280,6 +303,7 @@ Without PubMed, Study nodes would contain only whatever text appeared in the PDF
 - Production data migration
 
 **Infrastructure**:
+
 - Docker Compose for orchestration
 - Neo4j clustering (if needed for scale)
 - Nginx reverse proxy
@@ -288,6 +312,7 @@ Without PubMed, Study nodes would contain only whatever text appeared in the PDF
 - Automated backups to cloud storage
 
 **Deliverables**:
+
 - [ ] Production Docker configuration
 - [ ] Nginx reverse proxy setup
 - [ ] Cloudflare integration
@@ -298,6 +323,7 @@ Without PubMed, Study nodes would contain only whatever text appeared in the PDF
 - [ ] Disaster recovery procedures
 
 **Success Metrics**:
+
 - 99.9% uptime SLA
 - <50ms additional latency from proxy
 - Automated backups every 6 hours
@@ -307,10 +333,12 @@ Without PubMed, Study nodes would contain only whatever text appeared in the PDF
 ---
 
 ### Phase 6: Multi-Disease Extension (Future PRD)
+
 **Duration**: 4-6 weeks per additional disease  
 **Estimated Start**: After Phase 5 complete and diabetes validated
 
 **Scope**:
+
 - Extend to 5-10 high-priority conditions
 - Validate schema handles different disease types
 - Cross-guideline interaction detection
@@ -318,6 +346,7 @@ Without PubMed, Study nodes would contain only whatever text appeared in the PDF
 - Multi-disease query patterns
 
 **Priority Conditions** (VA/DoD high-impact):
+
 1. Type 2 Diabetes Mellitus ✓ (Phase 1-5)
 2. Hypertension
 3. Chronic Kidney Disease
@@ -330,6 +359,7 @@ Without PubMed, Study nodes would contain only whatever text appeared in the PDF
 10. Substance Use Disorder
 
 **Per-Disease Process**:
+
 1. Acquire latest VA/DoD CPG
 2. Run ingestion pipeline (reuse Phase 2 code)
 3. Clinical SME validation
@@ -338,6 +368,7 @@ Without PubMed, Study nodes would contain only whatever text appeared in the PDF
 6. Deployment
 
 **Deliverables** (per disease):
+
 - [ ] Complete guideline ingested
 - [ ] Clinical validation report
 - [ ] Cross-guideline interaction analysis
@@ -345,6 +376,7 @@ Without PubMed, Study nodes would contain only whatever text appeared in the PDF
 - [ ] Performance testing with expanded graph
 
 **Success Metrics**:
+
 - Each disease ingest completes in <1 week
 - Query performance maintained (<500ms)
 - Cross-guideline queries identify conflicts
@@ -353,10 +385,12 @@ Without PubMed, Study nodes would contain only whatever text appeared in the PDF
 ---
 
 ### Phase 7: Patient-Facing Translation Layer (Future PRD)
+
 **Duration**: 6-8 weeks  
 **Estimated Start**: After Phase 6 (multiple diseases stable)
 
 **Scope**:
+
 - AI translation layer for patient-friendly language
 - Safety guardrails for patient-facing content
 - Integration with existing VA/DoD patient education materials
@@ -365,6 +399,7 @@ Without PubMed, Study nodes would contain only whatever text appeared in the PDF
 - HIPAA compliance for patient interactions
 
 **Key Features**:
+
 - Same knowledge graph, different presentation layer
 - "Why did my doctor prescribe metformin?" → Plain language explanation with benefits/risks
 - "What are my treatment options?" → Lay summary of alternatives
@@ -372,6 +407,7 @@ Without PubMed, Study nodes would contain only whatever text appeared in the PDF
 - Links to existing patient education resources
 
 **Translation Principles**:
+
 - 6th-8th grade reading level
 - Avoid medical jargon or define when necessary
 - Use analogies and plain language
@@ -380,6 +416,7 @@ Without PubMed, Study nodes would contain only whatever text appeared in the PDF
 - Cultural sensitivity
 
 **Deliverables**:
+
 - [ ] Patient query understanding (different language patterns)
 - [ ] Clinical-to-lay language translation AI
 - [ ] Safety content review system
@@ -390,6 +427,7 @@ Without PubMed, Study nodes would contain only whatever text appeared in the PDF
 - [ ] HIPAA compliance documentation
 
 **Success Metrics**:
+
 - Reading level <9th grade for all responses
 - >80% patient comprehension (tested)
 - >90% patient satisfaction score
@@ -399,11 +437,13 @@ Without PubMed, Study nodes would contain only whatever text appeared in the PDF
 ---
 
 ### Phase 8: Structured Data Entry Portal (Future PRD)
+
 **Estimated Start**: After multi-disease ingestion validates the schema across guideline types
 
 **Context**: The PDF parsing pipeline (Phase 2) is a **bootstrapping mechanism** for ingesting existing published guidelines. Long-term, the guideline development teams who author these CPGs will enter data directly into the knowledge graph through a structured front-end portal. This eliminates PDF parsing entirely — the graph becomes the primary data store, not a derivative of a PDF.
 
 **Scope**:
+
 - Web-based data entry portal for guideline development teams
 - Structured forms for each entity type (recommendations, key questions, evidence bodies, studies)
 - GRADE methodology workflow built into the UI (strength, direction, quality ratings)
@@ -414,10 +454,13 @@ Without PubMed, Study nodes would contain only whatever text appeared in the PDF
 - Role-based access (authors, reviewers, approvers)
 
 **Key Insight**: This inverts the data flow. Instead of:
+
 ```
 PDF document → Parse → Extract → Graph
 ```
+
 It becomes:
+
 ```
 Structured entry → Graph → Generate document (if needed)
 ```
@@ -425,6 +468,7 @@ Structured entry → Graph → Generate document (if needed)
 The graph schema, validation rules, and entity relationships built in Phases 1-2 directly inform the portal's form structure and business logic. The same JSON schemas used for LLM extraction validation become the input validation rules for the data entry forms.
 
 **Deliverables**:
+
 - [ ] Data entry UI for all Phase 2 entity types
 - [ ] GRADE methodology workflow
 - [ ] Review/approval system
@@ -434,6 +478,7 @@ The graph schema, validation rules, and entity relationships built in Phases 1-2
 - [ ] Migration path from PDF-ingested data to author-maintained data
 
 **Success Metrics**:
+
 - Guideline teams can enter a complete CPG without any PDF intermediate step
 - Data quality exceeds PDF extraction accuracy (no parsing errors possible)
 - Update cycle reduced from months (PDF republish) to days (direct graph update)
@@ -444,6 +489,7 @@ The graph schema, validation rules, and entity relationships built in Phases 1-2
 ### Phase 9: Advanced Features (Future PRDs)
 
 **Automated Evidence Monitoring**:
+
 - PubMed/Embase automated searches
 - New study ingestion pipeline
 - Impact analysis (does new evidence change recommendations?)
@@ -451,6 +497,7 @@ The graph schema, validation rules, and entity relationships built in Phases 1-2
 - Scheduled evidence review reports
 
 **EHR Integration**:
+
 - FHIR API for patient context
 - Real-time patient data integration
 - Context-aware recommendations
@@ -458,6 +505,7 @@ The graph schema, validation rules, and entity relationships built in Phases 1-2
 - Order set generation
 
 **Quality Measurement**:
+
 - Guideline adherence metrics
 - Practice variation analysis
 - Outcome tracking
@@ -465,6 +513,7 @@ The graph schema, validation rules, and entity relationships built in Phases 1-2
 - Feedback loops for guideline refinement
 
 **Learning Healthcare System**:
+
 - Aggregate outcomes data
 - Real-world evidence integration
 - Recommendation effectiveness analysis
@@ -476,6 +525,7 @@ The graph schema, validation rules, and entity relationships built in Phases 1-2
 ## Success Metrics (Overall Project)
 
 ### Technical Metrics
+
 - [ ] Query response time <500ms for 95% of queries
 - [ ] 99.9% system uptime
 - [ ] Vector search relevance >0.8 average score
@@ -483,6 +533,7 @@ The graph schema, validation rules, and entity relationships built in Phases 1-2
 - [ ] <24 hour lag from evidence publication to detection
 
 ### Clinical Metrics
+
 - [ ] Guideline-concordant prescribing rates increase 15%+
 - [ ] Reduction in practice variation by 20%+
 - [ ] Clinician satisfaction score >4/5
@@ -490,6 +541,7 @@ The graph schema, validation rules, and entity relationships built in Phases 1-2
 - [ ] Zero patient safety incidents attributed to system
 
 ### Operational Metrics
+
 - [ ] 5-10 guidelines fully ingested
 - [ ] Time from new evidence to guideline update <30 days
 - [ ] Complete evidence traceability for all recommendations
@@ -497,6 +549,7 @@ The graph schema, validation rules, and entity relationships built in Phases 1-2
 - [ ] Automated monitoring operational
 
 ### Adoption Metrics
+
 - [ ] 100+ active clinician users (pilot)
 - [ ] 1000+ queries per week
 - [ ] 50+ repeat users (high engagement)
@@ -544,28 +597,33 @@ The graph schema, validation rules, and entity relationships built in Phases 1-2
 ### Development Team (Phase 1-5)
 
 **Core Team**:
+
 - Senior Software Engineer (Graph DB, Python): 1 FTE
 - Data Engineer (ETL, NLP): 0.5 FTE
 - ML Engineer (Embeddings, LLM integration): 0.5 FTE
 - UX Designer (Chatbot interface): 0.25 FTE
 
 **Clinical Validation**:
+
 - Clinical SME (Physician): 0.25 FTE
 - Pharmacist: 0.1 FTE
 - Nurse Educator: 0.1 FTE
 
 **Project Management**:
+
 - Technical Project Manager: 0.25 FTE
 
 ### Infrastructure Costs
 
 **Development** (monthly):
+
 - Cloud hosting (AWS/Azure/GCP): $200-500
 - Neo4j Enterprise (if needed): $0 (Community edition sufficient for dev)
 - OpenAI API (embeddings/LLM): $100-300
 - Development tools/licenses: $100
 
 **Production** (monthly):
+
 - Cloud hosting: $500-1500
 - SSL/CDN (Cloudflare): $20-200
 - Backup storage: $50-100
@@ -587,6 +645,7 @@ The graph schema, validation rules, and entity relationships built in Phases 1-2
 ## Dependencies & Prerequisites
 
 ### Technical Dependencies
+
 - Docker Desktop installed and running
 - Python 3.10+ development environment
 - Neo4j Community Edition 5.x (via Docker)
@@ -595,6 +654,7 @@ The graph schema, validation rules, and entity relationships built in Phases 1-2
 - PubMed API access for study metadata
 
 ### Organizational Dependencies
+
 - Clinical SME availability for validation
 - Approval for pilot deployment
 - Access to target clinician users for testing
@@ -602,6 +662,7 @@ The graph schema, validation rules, and entity relationships built in Phases 1-2
 - Security/privacy review approval
 
 ### External Dependencies
+
 - OpenAI API access (or alternative LLM)
 - Embedding model selection
 - PDF parsing libraries (PyMuPDF, pdfplumber)
@@ -613,24 +674,28 @@ The graph schema, validation rules, and entity relationships built in Phases 1-2
 ## Quality Assurance Strategy
 
 ### Data Quality
+
 1. **Extraction Validation**: Manual review of sample (10%) of extracted recommendations
 2. **Relationship Verification**: SME validation of evidence chains
 3. **Completeness Checks**: Automated scripts verify all required properties present
 4. **Cross-reference Validation**: PMIDs resolved, studies match citations
 
 ### Query Quality
+
 1. **Unit Tests**: Each traversal pattern has test cases
 2. **Integration Tests**: End-to-end query scenarios
 3. **Performance Tests**: Load testing with concurrent users
 4. **Regression Tests**: Ensure updates don't break existing queries
 
 ### Clinical Safety
+
 1. **SME Review**: Clinical experts review all AI-generated responses
 2. **Contradiction Detection**: Automated checks for conflicting recommendations
 3. **Citation Verification**: All responses link back to source evidence
 4. **Safety Guardrails**: System refuses unsafe queries, flags uncertainty
 
 ### User Acceptance
+
 1. **Usability Testing**: 10+ clinicians test interface
 2. **Accuracy Assessment**: Clinical experts rate response quality
 3. **Satisfaction Surveys**: User feedback collection
@@ -641,6 +706,7 @@ The graph schema, validation rules, and entity relationships built in Phases 1-2
 ## Documentation Strategy
 
 ### Technical Documentation
+
 - [x] **SCHEMA.md**: Complete graph schema specification
 - [x] **GRAPH_TRAVERSALS.md**: Query patterns and examples
 - [ ] **NEO4J_SETUP.md**: Docker configuration and deployment
@@ -650,12 +716,14 @@ The graph schema, validation rules, and entity relationships built in Phases 1-2
 - [ ] **MAINTENANCE.md**: Backup, monitoring, troubleshooting
 
 ### Process Documentation
+
 - [ ] **DATA_INGESTION.md**: How to add new guidelines
 - [ ] **VALIDATION_PROCESS.md**: Quality assurance procedures
 - [ ] **UPDATE_WORKFLOW.md**: Evidence monitoring and updates
 - [ ] **CLINICAL_REVIEW.md**: SME validation guidelines
 
 ### User Documentation
+
 - [ ] **CLINICIAN_GUIDE.md**: How to use the chatbot
 - [ ] **QUERY_EXAMPLES.md**: Sample questions and answers
 - [ ] **INTERPRETATION_GUIDE.md**: Understanding recommendations
@@ -666,6 +734,7 @@ The graph schema, validation rules, and entity relationships built in Phases 1-2
 ## Future Enhancements (Beyond Initial Phases)
 
 ### Advanced Analytics
+
 - Practice pattern analysis
 - Guideline adherence dashboards
 - Outcome prediction models
@@ -673,6 +742,7 @@ The graph schema, validation rules, and entity relationships built in Phases 1-2
 - Cost-effectiveness analysis
 
 ### Interoperability
+
 - SNOMED-CT/ICD-10/RxNorm ontology mapping
 - FHIR resource generation
 - CDS Hooks integration
@@ -680,6 +750,7 @@ The graph schema, validation rules, and entity relationships built in Phases 1-2
 - HL7 v2 message integration
 
 ### Intelligence
+
 - Active learning from clinician feedback
 - Reinforcement learning from outcomes
 - Multi-modal input (images, labs, notes)
@@ -687,6 +758,7 @@ The graph schema, validation rules, and entity relationships built in Phases 1-2
 - Uncertainty quantification
 
 ### Collaboration
+
 - Guideline authoring tools
 - Multi-stakeholder review workflows
 - Version control for recommendations
@@ -700,12 +772,14 @@ The graph schema, validation rules, and entity relationships built in Phases 1-2
 ### Stakeholders
 
 **Primary**:
+
 - Clinical leadership (VA/DoD)
 - Guideline development committees
 - Pilot site clinicians
 - IT security/infrastructure teams
 
 **Secondary**:
+
 - Quality improvement teams
 - Patient advocacy groups
 - Research collaborators
@@ -720,6 +794,7 @@ The graph schema, validation rules, and entity relationships built in Phases 1-2
 **Ad-hoc**: User feedback sessions, demos
 
 ### Communication Channels
+
 - Project documentation (GitHub)
 - Slack/Teams channel for real-time collaboration
 - Monthly newsletters to stakeholders
@@ -735,6 +810,7 @@ The graph schema, validation rules, and entity relationships built in Phases 1-2
 **Participants**: 50-100 clinicians across 2-3 VA/DoD facilities  
 **Duration**: 6 months active use  
 **Data Collection**:
+
 - System usage logs (queries, response times)
 - Clinical outcomes (guideline adherence, patient outcomes)
 - Satisfaction surveys (monthly)
@@ -742,6 +818,7 @@ The graph schema, validation rules, and entity relationships built in Phases 1-2
 - Error reports and feedback
 
 **Evaluation Questions**:
+
 1. Does the system improve guideline-concordant care?
 2. Do clinicians find it useful and usable?
 3. Does it reduce time to find recommendations?
@@ -749,6 +826,7 @@ The graph schema, validation rules, and entity relationships built in Phases 1-2
 5. What features are most/least valuable?
 
 **Success Criteria for Expansion**:
+>
 - >70% clinician satisfaction
 - Measurable improvement in guideline adherence
 - Zero critical safety incidents
@@ -762,18 +840,21 @@ The graph schema, validation rules, and entity relationships built in Phases 1-2
 Document key learnings after each phase:
 
 ### Phase 1 (Foundation)
+
 - [ ] What worked well in schema design?
 - [ ] What would we change about the structure?
 - [ ] Performance lessons from early queries?
 - [ ] Docker/infrastructure issues encountered?
 
 ### Phase 2 (Data Ingestion)
+
 - [ ] PDF parsing challenges and solutions?
 - [ ] Data quality issues discovered?
 - [ ] Time estimates vs actuals?
 - [ ] SME validation process effectiveness?
 
 ### Future Phases
+
 - Document after each phase completion
 - Adjust subsequent plans based on learnings
 - Share best practices across team
@@ -802,18 +883,21 @@ Document key learnings after each phase:
 ## Next Steps
 
 **Immediate** (This Week):
+
 1. Review and finalize this project overview
 2. Begin Phase 1 implementation (PRD Part 1)
 3. Set up development environment
 4. Initial Docker/Neo4j configuration
 
 **Short-term** (Next 2-4 Weeks):
+
 1. Complete Phase 1 foundation
 2. Validate schema with test data
 3. Begin planning Phase 2 (data ingestion)
 4. Recruit clinical SME for validation
 
 **Medium-term** (Next 3-6 Months):
+
 1. Complete Phases 1-3 (foundation, ingestion, API)
 2. Initial chatbot prototype
 3. Begin pilot planning

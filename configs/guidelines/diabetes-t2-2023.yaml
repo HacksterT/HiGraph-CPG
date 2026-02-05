@@ -18,7 +18,7 @@ source:
 
 sections:
   recommendations_table:
-    start_page: 25
+    start_page: 24  # Table 5 starts on page 24 with recs 1-3
     end_page: 70
     table_name: "table_5_recommendations"
     column_mapping:
@@ -103,14 +103,14 @@ modules:
     sequence_order: 9
 
 expected_counts:
-  recommendations: 54
+  recommendations: 26  # Table 5 has 26 recommendations (not 54)
   key_questions: 12
   studies: 103
   evidence_bodies: 12
 
 extraction:
-  llm_provider: "claude"
-  llm_model: "claude-3-5-sonnet-20241022"
+  llm_provider: "openai"
+  llm_model: "gpt-4o"  # 16K output tokens, faster than turbo-preview
   batch_size: 5
   max_retries: 3
   retry_delay: 2.0

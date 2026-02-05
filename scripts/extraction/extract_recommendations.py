@@ -97,7 +97,7 @@ def run(config_path: str, resume: bool = True):
 
     # Initialize AI client
     print(f"Initializing {config.extraction.llm_provider} client...")
-    client = create_extraction_client(config.extraction.llm_provider)
+    client = create_extraction_client(config.extraction.llm_provider, config.extraction.llm_model)
 
     # Create processor
     checkpoint_dir = str(ctx.checkpoint_path("recommendations"))
