@@ -26,6 +26,7 @@ def check_api_health(api_url: str, timeout: float = 5.0) -> bool:
 def get_answer(
     api_url: str,
     question: str,
+    conversation_history: list[dict] | None = None,
     include_citations: bool = True,
     include_studies: bool = False,
     timeout: float = 30.0,
@@ -36,6 +37,7 @@ def get_answer(
     Args:
         api_url: Base URL of the API
         question: The question to ask
+        conversation_history: List of previous turns [{"role": "user/assistant", "content": "..."}]
         include_citations: Whether to include recommendation citations
         include_studies: Whether to include study citations
         timeout: Request timeout in seconds
@@ -45,14 +47,20 @@ def get_answer(
         or dict with 'error' key if request failed
     """
     try:
+        request_body = {
+            "question": question,
+            "include_citations": include_citations,
+            "include_studies": include_studies,
+        }
+
+        # Add conversation history if provided
+        if conversation_history:
+            request_body["conversation_history"] = conversation_history
+
         with httpx.Client(timeout=timeout) as client:
             response = client.post(
                 f"{api_url}/api/v1/answer",
-                json={
-                    "question": question,
-                    "include_citations": include_citations,
-                    "include_studies": include_studies,
-                },
+                json=request_body,
             )
 
             if response.status_code == 200:

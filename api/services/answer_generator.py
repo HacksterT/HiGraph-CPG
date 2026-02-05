@@ -6,7 +6,7 @@ import httpx
 
 from api.config import Settings, get_settings
 
-# Answer generation prompt template
+# Answer generation prompt template (without conversation history)
 ANSWER_PROMPT = """You are a clinical decision support assistant helping physicians with Type 2 Diabetes treatment decisions based on the VA/DoD Clinical Practice Guideline.
 
 IMPORTANT RULES:
@@ -26,6 +26,38 @@ PHYSICIAN'S QUESTION:
 
 Provide a helpful, accurate answer that cites the specific recommendations:"""
 
+# Answer generation prompt with conversation history
+ANSWER_PROMPT_WITH_HISTORY = """You are a clinical decision support assistant helping physicians with Type 2 Diabetes treatment decisions based on the VA/DoD Clinical Practice Guideline.
+
+IMPORTANT RULES:
+1. ONLY use information from the provided recommendations below - never make up or invent recommendations
+2. Always cite specific recommendation IDs (e.g., "Recommendation 22" or "REC_022")
+3. Include the strength (Strong/Weak) and direction (For/Against) when discussing recommendations
+4. If the provided context doesn't contain relevant information, say "Based on the available recommendations, I don't have specific guidance on this topic."
+5. Keep answers concise but complete (2-3 paragraphs max)
+6. Use markdown formatting: **bold** for recommendation IDs and key terms
+7. When multiple recommendations apply, prioritize Strong recommendations over Weak ones
+8. Use the conversation history to understand context for follow-up questions (e.g., "tell me more about that", "what about side effects?")
+
+RETRIEVED RECOMMENDATIONS:
+{context}
+
+CONVERSATION HISTORY:
+{history}
+
+PHYSICIAN'S CURRENT QUESTION:
+{question}
+
+Provide a helpful, accurate answer that cites the specific recommendations and takes into account the conversation context:"""
+
+# Summarization prompt for long conversation histories
+SUMMARIZE_HISTORY_PROMPT = """Summarize the following conversation between a physician and a clinical assistant about diabetes management. Keep the key clinical topics, recommendations mentioned, and patient characteristics discussed. Be concise (2-3 sentences).
+
+CONVERSATION:
+{history}
+
+SUMMARY:"""
+
 NO_RESULTS_RESPONSE = """Based on the available recommendations in the VA/DoD Type 2 Diabetes Clinical Practice Guideline, I don't have specific guidance that directly addresses your question.
 
 You may want to:
@@ -40,7 +72,7 @@ class AnswerGenerator:
     def __init__(self, settings: Settings):
         self.settings = settings
         self._client: httpx.Client | None = None
-        self.model = "claude-3-5-sonnet-20241022"  # Better quality for synthesis
+        self.model = "claude-sonnet-4-20250514"  # Claude Sonnet 4 for synthesis
 
     @property
     def client(self) -> httpx.Client:
@@ -68,7 +100,8 @@ class AnswerGenerator:
         question: str,
         recommendations: list[dict],
         include_studies: bool = False,
-    ) -> tuple[str, dict, int]:
+        conversation_history: list[dict] | None = None,
+    ) -> tuple[str, dict, int, dict]:
         """
         Generate a natural language answer from retrieved recommendations.
 
@@ -76,15 +109,24 @@ class AnswerGenerator:
             question: The user's question
             recommendations: List of recommendation dicts from query endpoint
             include_studies: Whether to include study details in context
+            conversation_history: List of previous conversation turns
 
         Returns:
-            Tuple of (answer_text, token_usage, generation_time_ms)
+            Tuple of (answer_text, token_usage, generation_time_ms, context_usage)
         """
         start_time = time.perf_counter()
 
+        # Initialize context usage tracking
+        context_usage = {
+            "history_turns_received": len(conversation_history) if conversation_history else 0,
+            "history_turns_used": 0,
+            "history_summarized": False,
+            "estimated_context_tokens": 0,
+        }
+
         # Handle no results case
         if not recommendations:
-            return NO_RESULTS_RESPONSE, {"prompt": 0, "completion": 0}, 0
+            return NO_RESULTS_RESPONSE, {"prompt": 0, "completion": 0}, 0, context_usage
 
         # Build context from recommendations
         context = self._build_context(recommendations, include_studies)
@@ -92,8 +134,18 @@ class AnswerGenerator:
         # Check context length and truncate if needed
         context = self._truncate_context(context, max_tokens=6000)
 
-        # Build prompt
-        prompt = ANSWER_PROMPT.format(context=context, question=question)
+        # Build prompt with or without history
+        if conversation_history:
+            history_text, context_usage = self._build_history_context(
+                conversation_history, context_usage
+            )
+            prompt = ANSWER_PROMPT_WITH_HISTORY.format(
+                context=context,
+                history=history_text,
+                question=question
+            )
+        else:
+            prompt = ANSWER_PROMPT.format(context=context, question=question)
 
         try:
             response = self.client.post(
@@ -123,7 +175,108 @@ class AnswerGenerator:
             tokens = {"prompt": 0, "completion": 0}
 
         generation_time_ms = int((time.perf_counter() - start_time) * 1000)
-        return answer, tokens, generation_time_ms
+        return answer, tokens, generation_time_ms, context_usage
+
+    def _build_history_context(
+        self,
+        conversation_history: list[dict],
+        context_usage: dict,
+        max_turns: int = 10,
+        max_tokens: int = 2000,
+    ) -> tuple[str, dict]:
+        """
+        Build conversation history context with sliding window and optional summarization.
+
+        Args:
+            conversation_history: List of conversation turns
+            context_usage: Dict to update with usage info
+            max_turns: Maximum number of turns to include (default 10 = 5 exchanges)
+            max_tokens: Maximum tokens for history context
+
+        Returns:
+            Tuple of (history_text, updated_context_usage)
+        """
+        if not conversation_history:
+            return "[No previous conversation]", context_usage
+
+        # Apply sliding window - keep last N turns
+        if len(conversation_history) > max_turns:
+            # We need to summarize older turns
+            older_turns = conversation_history[:-max_turns]
+            recent_turns = conversation_history[-max_turns:]
+
+            # Summarize older turns
+            summary = self._summarize_history(older_turns)
+            context_usage["history_summarized"] = True
+
+            # Build history text with summary + recent turns
+            history_parts = [f"[Summary of earlier conversation: {summary}]", ""]
+            for turn in recent_turns:
+                role = turn.get("role", "unknown").capitalize()
+                content = turn.get("content", "")
+                history_parts.append(f"{role}: {content}")
+
+            context_usage["history_turns_used"] = len(recent_turns)
+        else:
+            # All turns fit in window
+            history_parts = []
+            for turn in conversation_history:
+                role = turn.get("role", "unknown").capitalize()
+                content = turn.get("content", "")
+                history_parts.append(f"{role}: {content}")
+
+            context_usage["history_turns_used"] = len(conversation_history)
+
+        history_text = "\n".join(history_parts)
+
+        # Truncate if still too long
+        max_chars = max_tokens * 4
+        if len(history_text) > max_chars:
+            history_text = history_text[-max_chars:]
+            # Try to start at a clean line
+            first_newline = history_text.find("\n")
+            if first_newline > 0 and first_newline < len(history_text) * 0.3:
+                history_text = "[...]\n" + history_text[first_newline + 1:]
+
+        context_usage["estimated_context_tokens"] = len(history_text) // 4
+        return history_text, context_usage
+
+    def _summarize_history(self, turns: list[dict]) -> str:
+        """
+        Summarize older conversation turns to save tokens.
+
+        Args:
+            turns: List of conversation turns to summarize
+
+        Returns:
+            Summary string
+        """
+        # Build history text for summarization
+        history_parts = []
+        for turn in turns:
+            role = turn.get("role", "unknown").capitalize()
+            content = turn.get("content", "")
+            history_parts.append(f"{role}: {content}")
+        history_text = "\n".join(history_parts)
+
+        # Use a quick API call to summarize
+        try:
+            response = self.client.post(
+                "/v1/messages",
+                json={
+                    "model": "claude-haiku-4-20250514",  # Use fast model for summarization
+                    "max_tokens": 150,
+                    "messages": [
+                        {"role": "user", "content": SUMMARIZE_HISTORY_PROMPT.format(history=history_text)}
+                    ],
+                },
+            )
+            response.raise_for_status()
+            result = response.json()
+            return result["content"][0]["text"].strip()
+        except Exception:
+            # Fallback: just note that there was earlier conversation
+            return "Earlier discussion about diabetes treatment options."
 
     def _build_context(
         self,

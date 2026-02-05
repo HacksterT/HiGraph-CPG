@@ -3,6 +3,21 @@
 from pydantic import BaseModel, Field
 
 
+class ConversationTurn(BaseModel):
+    """A single turn in the conversation history."""
+
+    role: str = Field(
+        ...,
+        description="Role of the speaker (user or assistant)",
+        json_schema_extra={"example": "user"}
+    )
+    content: str = Field(
+        ...,
+        description="Content of the message",
+        json_schema_extra={"example": "What medications are recommended for CKD?"}
+    )
+
+
 class AnswerRequest(BaseModel):
     """Request body for answer generation endpoint."""
 
@@ -12,6 +27,11 @@ class AnswerRequest(BaseModel):
         max_length=2000,
         description="Natural language question about diabetes care",
         json_schema_extra={"example": "What medications are recommended for patients with diabetes and kidney disease?"}
+    )
+    conversation_history: list[ConversationTurn] = Field(
+        default_factory=list,
+        max_length=20,
+        description="Previous conversation turns for context (max 20 turns, ~10 exchanges)"
     )
     include_citations: bool = Field(
         default=True,
@@ -48,6 +68,27 @@ class StudyCitation(BaseModel):
     year: int | None = Field(None, description="Publication year")
 
 
+class ContextUsage(BaseModel):
+    """Information about conversation context usage."""
+
+    history_turns_received: int = Field(
+        default=0,
+        description="Number of conversation turns received in request"
+    )
+    history_turns_used: int = Field(
+        default=0,
+        description="Number of turns included in prompt (after windowing)"
+    )
+    history_summarized: bool = Field(
+        default=False,
+        description="Whether older history was summarized to fit token limit"
+    )
+    estimated_context_tokens: int = Field(
+        default=0,
+        description="Estimated tokens used for conversation context"
+    )
+
+
 class AnswerReasoning(BaseModel):
     """Metadata about answer generation."""
 
@@ -61,6 +102,10 @@ class AnswerReasoning(BaseModel):
         default_factory=dict,
         description="Token usage breakdown",
         json_schema_extra={"example": {"prompt": 2400, "completion": 350}}
+    )
+    context_usage: ContextUsage = Field(
+        default_factory=ContextUsage,
+        description="Information about conversation context usage"
     )
 
 
@@ -105,7 +150,7 @@ class AnswerResponse(BaseModel):
                     "results_used": 3,
                     "generation_time_ms": 1200,
                     "total_time_ms": 1650,
-                    "model_used": "claude-3-5-sonnet-20241022",
+                    "model_used": "claude-sonnet-4-20250514",
                     "tokens_used": {"prompt": 2400, "completion": 350}
                 }
             }

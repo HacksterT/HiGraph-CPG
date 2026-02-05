@@ -11,6 +11,7 @@ from api.models.answer import (
     AnswerRequest,
     AnswerResponse,
     Citation,
+    ContextUsage,
     StudyCitation,
 )
 from api.models.query import ExtractedEntities, Intent, QueryType
@@ -126,11 +127,17 @@ async def generate_answer(
     # Limit to top_k for answer generation
     top_results = reranked[:request.top_k]
 
-    # Step 4: Generate answer
-    answer_text, tokens, gen_time = answer_generator.generate(
+    # Step 4: Generate answer with conversation context
+    # Convert conversation history to dict format for generator
+    history = None
+    if request.conversation_history:
+        history = [{"role": t.role, "content": t.content} for t in request.conversation_history]
+
+    answer_text, tokens, gen_time, context_usage_dict = answer_generator.generate(
         question=request.question,
         recommendations=top_results,
         include_studies=request.include_studies,
+        conversation_history=history,
     )
 
     # Step 5: Build citations
@@ -152,6 +159,14 @@ async def generate_answer(
 
     total_time = int((time.perf_counter() - start_time) * 1000)
 
+    # Build context usage from generator response
+    context_usage = ContextUsage(
+        history_turns_received=context_usage_dict.get("history_turns_received", 0),
+        history_turns_used=context_usage_dict.get("history_turns_used", 0),
+        history_summarized=context_usage_dict.get("history_summarized", False),
+        estimated_context_tokens=context_usage_dict.get("estimated_context_tokens", 0),
+    )
+
     reasoning = AnswerReasoning(
         query_routing=routing_decision.query_type.value,
         results_retrieved=results_retrieved,
@@ -160,6 +175,7 @@ async def generate_answer(
         total_time_ms=total_time,
         model_used=answer_generator.model,
         tokens_used=tokens,
+        context_usage=context_usage,
     )
 
     return AnswerResponse(

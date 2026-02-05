@@ -32,9 +32,10 @@ def render_chat_message(
         if citations:
             render_citations(citations)
 
-        # Reasoning/metadata (collapsed by default)
+        # Reasoning/metadata (collapsed by default, or expanded if debug mode)
         if reasoning:
-            with st.expander("🔍 Query Details", expanded=False):
+            show_debug = st.session_state.get("show_debug", False)
+            with st.expander("🔍 Query Details", expanded=show_debug):
                 col1, col2, col3 = st.columns(3)
 
                 with col1:
@@ -63,3 +64,16 @@ def render_chat_message(
                         f"Tokens: {tokens.get('prompt', 0)} prompt + "
                         f"{tokens.get('completion', 0)} completion"
                     )
+
+                # Context usage (conversation history)
+                context_usage = reasoning.get("context_usage", {})
+                if context_usage and context_usage.get("history_turns_received", 0) > 0:
+                    st.divider()
+                    st.caption("**Conversation Context**")
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.text(f"History turns: {context_usage.get('history_turns_used', 0)}/{context_usage.get('history_turns_received', 0)}")
+                    with col2:
+                        st.text(f"Context tokens: ~{context_usage.get('estimated_context_tokens', 0)}")
+                    if context_usage.get("history_summarized"):
+                        st.info("Older conversation was summarized to fit context window")

@@ -71,6 +71,30 @@ if "api_healthy" not in st.session_state:
 if "current_evidence_rec" not in st.session_state:
     st.session_state.current_evidence_rec = None
 
+if "show_debug" not in st.session_state:
+    st.session_state.show_debug = False
+
+
+def build_conversation_history(messages: list[dict], max_turns: int = 10) -> list[dict]:
+    """
+    Build conversation history for API request.
+
+    Args:
+        messages: List of message dicts from session state
+        max_turns: Maximum number of turns to include (default 10 = 5 exchanges)
+
+    Returns:
+        List of conversation turns for API
+    """
+    # Convert to API format and limit to recent turns
+    history = []
+    for msg in messages[-max_turns:]:
+        history.append({
+            "role": msg["role"],
+            "content": msg["content"],
+        })
+    return history
+
 
 def main():
     """Main application entry point."""
@@ -129,9 +153,18 @@ def main():
         st.session_state.messages.append({"role": "user", "content": prompt})
         render_user_message(prompt)
 
-        # Get response
+        # Build conversation history from previous messages (excluding current question)
+        conversation_history = build_conversation_history(
+            st.session_state.messages[:-1]  # Exclude the message we just added
+        )
+
+        # Get response with conversation context
         with st.spinner("Searching knowledge base and generating answer..."):
-            response = get_answer(API_URL, prompt)
+            response = get_answer(
+                API_URL,
+                prompt,
+                conversation_history=conversation_history if conversation_history else None,
+            )
 
         if response.get("error"):
             error_msg = f"Error: {response['error']}"
@@ -184,7 +217,38 @@ def main():
         - Be specific about patient characteristics
         - Ask about drug classes (SGLT2, GLP-1, etc.)
         - Request evidence for recommendations
+        - Ask follow-up questions like "tell me more" or "what about side effects?"
         """)
+
+        st.divider()
+
+        st.header("Settings")
+        st.session_state.show_debug = st.toggle(
+            "Show debug info",
+            value=st.session_state.show_debug,
+            help="Display context usage and timing information"
+        )
+
+        # Show conversation stats if debug is on
+        if st.session_state.show_debug and st.session_state.messages:
+            st.divider()
+            st.subheader("Conversation Stats")
+            num_exchanges = len([m for m in st.session_state.messages if m["role"] == "user"])
+            st.metric("Exchanges", num_exchanges)
+
+            # Show last response's context usage if available
+            last_assistant = next(
+                (m for m in reversed(st.session_state.messages) if m["role"] == "assistant"),
+                None
+            )
+            if last_assistant and last_assistant.get("reasoning"):
+                reasoning = last_assistant["reasoning"]
+                context_usage = reasoning.get("context_usage", {})
+                if context_usage:
+                    st.caption("Last response context:")
+                    st.text(f"History turns used: {context_usage.get('history_turns_used', 0)}")
+                    st.text(f"Summarized: {context_usage.get('history_summarized', False)}")
+                    st.text(f"Est. tokens: {context_usage.get('estimated_context_tokens', 0)}")
 
 
 if __name__ == "__main__":

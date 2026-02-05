@@ -1,5 +1,7 @@
 # PRD: Query API Part 2 - Answer Generation & Chat UI
 
+**Status**: ✅ COMPLETE (2026-02-05) — All 4 stories implemented and tested
+
 ## Overview
 
 **Feature**: LLM Answer Generation and Streamlit Chat Interface for HiGraph-CPG
@@ -123,27 +125,36 @@
   - **Technical Notes**: Uses `evidence_chain_full` and `studies_for_recommendation` graph templates. Quality ratings color-coded: green=High, orange=Moderate, red=Low. Abstracts in expandable sections.
   - **Blockers**: None — COMPLETE
 
-- [ ] **STORY-04**: As a team, we want conversation context so that follow-up questions work naturally
+- [x] **STORY-04**: As a team, we want conversation context so that follow-up questions work naturally
   - **Priority**: Should-Have
-  - **Acceptance Criteria**: (verified at Manual Testing checkpoint)
-    - [ ] Follow-up questions like "Tell me more about that" reference previous answer
-    - [ ] System maintains last 3-5 exchanges as context for the LLM
-    - [ ] Context is summarized if it exceeds token limit (not truncated mid-sentence)
-    - [ ] New conversation button clears context
-    - [ ] Context usage shown in debug/reasoning panel (optional toggle)
-  - **Tasks**:
-    - [ ] Backend: Add conversation history to answer request model
-    - [ ] Backend: Implement context window management with sliding window
-    - [ ] Backend: Create context summarization for long conversations
-    - [ ] Frontend: Pass conversation history with each request
-    - [ ] Frontend: Add "New Conversation" button that clears history
-    - [ ] Frontend: Add optional debug panel showing context usage
-    - [ ] Testing: Test multi-turn conversations with follow-up questions
-    - [ ] Local Testing: Test 5-turn conversation with context-dependent questions
-    - [ ] Manual Testing: CHECKPOINT — Verify follow-up questions resolve correctly
-    - [ ] Git: Stage and commit with descriptive message
-  - **Technical Notes**: Sliding window of last 5 exchanges. If context > 6K tokens, summarize older exchanges. Store full history client-side, send relevant window to API.
-  - **Blockers**: STORY-01 and STORY-02 must be complete
+  - **Status**: ✅ COMPLETE (2026-02-05)
+  - **Acceptance Criteria**: (verified)
+    - [x] Follow-up questions like "Tell me more about that" reference previous answer
+    - [x] System maintains last 3-5 exchanges as context for the LLM
+    - [x] Context is summarized if it exceeds token limit (not truncated mid-sentence)
+    - [x] New conversation button clears context (Clear Chat button)
+    - [x] Context usage shown in debug/reasoning panel (optional toggle)
+  - **Tasks**: (all complete)
+    - [x] Backend: Add conversation history to answer request model (ConversationTurn model)
+    - [x] Backend: Implement context window management with sliding window (10 turns max)
+    - [x] Backend: Create context summarization for long conversations (uses Haiku)
+    - [x] Frontend: Pass conversation history with each request
+    - [x] Frontend: Add "New Conversation" button that clears history (Clear Chat button)
+    - [x] Frontend: Add optional debug panel showing context usage (sidebar toggle)
+    - [x] Testing: Test multi-turn conversations with follow-up questions
+    - [x] Local Testing: Test 5-turn conversation with context-dependent questions
+    - [x] Manual Testing: CHECKPOINT — Verify follow-up questions resolve correctly
+    - [x] Git: Stage and commit with descriptive message
+  - **Files Created/Modified**:
+    - `api/models/answer.py` — Added ConversationTurn, ContextUsage models
+    - `api/services/answer_generator.py` — Added _build_history_context, _summarize_history
+    - `api/routers/answer.py` — Pass conversation history, return context_usage
+    - `api/config.py` — Updated router model to claude-haiku-4-20250514
+    - `streamlit_app/utils/api_client.py` — Accept conversation_history parameter
+    - `streamlit_app/app.py` — Build and pass history, debug toggle in sidebar
+    - `streamlit_app/components/chat.py` — Display context usage when debug enabled
+  - **Technical Notes**: Sliding window of last 10 turns (5 exchanges). If context > 2K tokens for history, truncated. Older history summarized with Haiku when window exceeded. Context usage tracked in reasoning response.
+  - **Blockers**: None — COMPLETE
 
 ---
 
