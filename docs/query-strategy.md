@@ -22,83 +22,60 @@ The solution is a **hybrid retrieval pipeline** that uses both, followed by re-r
 
 ## Architecture
 
-```
 ┌──────────────────────────────────────────────────────────────┐
 │                        User Query                             │
 │  "What should I prescribe for a diabetic patient with CKD?"  │
 └────────────────────────┬─────────────────────────────────────┘
                          │
                 ┌────────▼─────────┐
-                │  Query Analyzer   │
-                │  (LLM or rules)   │
+                │   Query Router    │
+                │ (Claude Haiku 4)  │
                 │                   │
-                │  Extracts:        │
-                │  - intent         │
-                │  - entities       │
-                │  - patient chars  │
-                └───┬──────────┬───┘
-                    │          │
-         ┌──────────▼──┐   ┌──▼──────────────┐
-         │ Vector Path  │   │ Graph Path       │
-         │              │   │                  │
-         │ Embed query  │   │ Build Cypher     │
-         │ ANN search   │   │ from extracted   │
-         │ Top-K nodes  │   │ entities         │
-         │              │   │ Traverse rels    │
-         └──────┬───────┘   └────────┬────────┘
-                │                    │
-         ┌──────▼────────────────────▼──────┐
-         │         Result Fusion             │
-         │  Deduplicate, merge scores        │
-         │  Reciprocal Rank Fusion (RRF)     │
-         │  or weighted combination          │
-         └──────────────┬───────────────────┘
-                        │
-               ┌────────▼─────────┐
-               │    Re-ranker      │
-               │  Cross-encoder,   │
-               │  LLM judge, or    │
-               │  clinical rules   │
-               └────────┬─────────┘
-                        │
-               ┌────────▼─────────┐
-               │  Answer Generator │
-               │  LLM (Claude)     │
-               │  with top results │
-               │  as context       │
-               └──────────────────┘
-```
+                │  1. Analyzes NL   │
+                │  2. Extracts info │
+                │  3. Selects Path  │
+                └──────┬───┬───────┘
+                       │   │
+          ┌────────────▼┐  ┌▼───────────────┐
+          │ Vector Path │  │  Graph Path    │
+          │ (ANN Search)│  │ (Traversals)   │
+          │   Always    │  │ If Graph/Hybrid│
+          └────────────┬┘  └┬───────────────┘
+                       │    │
+                ┌──────▼────▼──────┐
+                │  Result Fusion   │
+                │      (RRF)       │
+                └────────┬─────────┘
+                         │
+                ┌────────▼─────────┐
+                │    Reranker      │
+                │ (Clinical Rules) │
+                └────────┬─────────┘
+                         │
+                ┌────────▼─────────┐
+                │ Answer Generator │
+                │ (Claude Sonnet 4)│
+                └──────────────────┘
 
 ---
 
 ## Pipeline Stages
 
-### Stage 1: Query Analysis
+### Stage 1: Analysis & Routing (`QueryRouter`)
 
-Before any retrieval, analyze the user's query to extract structured information.
+Before retrieval, the **Query Router** analyzes the user's question to extract structured metadata and determine the retrieval strategy (Vector, Graph, or Hybrid).
 
-**Input**: Raw natural language query
-**Output**: Intent classification, extracted entities, patient characteristics
+**Active Approach**:
+The `QueryRouter` (implemented in `api/services/query_router.py`) performs a **single-pass extraction and routing** call using **Claude Haiku 4**. This combines intent classification, entity extraction, and retrieval strategy selection into one high-efficiency API request.
 
-**Approach options** (in order of preference):
+**Extracted Metadata**:
 
-1. **LLM-based extraction** — Send the query to Claude with a structured prompt asking it to extract entities, intent, and patient characteristics. Most flexible, handles ambiguous queries.
-2. **NER + rules** — Use a clinical NER model to tag entities (drugs, conditions, lab values), then classify intent with rules. Faster, no LLM cost, but brittle.
-3. **Hybrid** — Use rules for common patterns, fall back to LLM for ambiguous queries.
-
-**Example**:
-
-```
-Query: "What should I prescribe for a diabetic patient with CKD?"
-
-Extracted:
-  intent: treatment_recommendation
-  condition: Type 2 Diabetes Mellitus
-  patient_characteristics: [CKD / renal impairment]
-  action: prescribe (pharmacologic intervention)
-```
-
-This extraction determines which retrieval paths to activate and what Cypher patterns to use.
+- **Intent**: (Treatment recommendation, evidence lookup, safety check, etc.)
+- **Entities**: (Conditions, Medications, Topics, Rec IDs)
+- **Routing Decision**:
+  - `VECTOR`: Conceptual/broad questions.
+  - `GRAPH`: Specific lookups on a single entity.
+  - `HYBRID`: Complex scenarios with 2+ factors (default for answer generation).
 
 ---
 
