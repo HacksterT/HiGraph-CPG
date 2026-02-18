@@ -180,17 +180,17 @@ RETURN r, eb, s
 Unlike the Vector Path (which uses a continuous similarity score), the **Graph Path** provides results ordered by **Logical Clinical Structure**. The ordering is intrinsic to the Cypher template selected by the router:
 
 - **Sequential Order (`rec_number`)**: Primary recommendations are returned in their original Guideline Sequence.
-  - *Note: This preserves the author's intended flow, assuming earlier numbers represent foundational or primary care steps.*
-- **Evidence Recency (`year DESC`)**: For evidence deep-dives, studies are ranked by publication date to ensure the most current data is prioritized.
-- **Guideline Density (`rec_count DESC`)**: For navigation/overview queries (e.g., "List all conditions"), items are ranked by how many recommendations they "host."
-  - *Example: A browse query for "Conditions" will list "Diabetic Kidney Disease" before "Retinopathy" if the former has more associated guidelines.*
+  - *Critical Assumption*: This assumes the CPG authors structured the document from foundational/primary care to specialized/complication management. It acts as a "Table of Contents" priority.
+- **Evidence Recency (`year DESC`)**: For evidence deep-dives, studies are ranked by publication date to ensure the "Freshest" data is prioritized.
+- **Guideline Density (`rec_count DESC`)**: For navigation/overview queries, items are ranked by how many recommendations they "host" **within their specific category**.
+  - *Categorical Separation*: Ranking across categories (e.g., Conditions vs. Topics) does not compete. A navigation query for "Conditions" will list "Diabetic Kidney Disease" high because of its density *within the condition list*, while a separate "Interventions" query would list "Pharmacotherapy" high for the same reason.
 
-**Joining the Lists**:
-The "Graph Path" list is **not** a merge of multiple disparate templates. Instead:
+**Joining the Lists (The "Single Entry" Principle)**:
+The "Graph Path" does not merge multiple templates or ranking methods. Instead:
 
 1. The `QueryRouter` selects exactly **one** primary template (e.g., `recommendations_by_condition`) based on its intent analysis.
-2. That template handles the joins and sorting server-side in Neo4j.
-3. The resulting ordered list is passed as the "syntactic truth" to the Fusion stage.
+2. That template handles all joins and sorting server-side in Neo4j using its internal logic.
+3. This ensures the RRF fusion stage receives a logically consistent "syntactic truth" without ranking noise from conflicting templates.
 
 ---
 
