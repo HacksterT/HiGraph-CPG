@@ -175,6 +175,25 @@ RETURN r, eb, s
 
 ---
 
+### Stage 2c: Structural Ranking (Pre-Fusion)
+
+Unlike the Vector Path (which uses a continuous similarity score), the **Graph Path** provides results ordered by **Logical Clinical Structure**. The ordering is intrinsic to the Cypher template selected by the router:
+
+- **Sequential Order (`rec_number`)**: Primary recommendations are returned in their original Guideline Sequence.
+  - *Note: This preserves the author's intended flow, assuming earlier numbers represent foundational or primary care steps.*
+- **Evidence Recency (`year DESC`)**: For evidence deep-dives, studies are ranked by publication date to ensure the most current data is prioritized.
+- **Guideline Density (`rec_count DESC`)**: For navigation/overview queries (e.g., "List all conditions"), items are ranked by how many recommendations they "host."
+  - *Example: A browse query for "Conditions" will list "Diabetic Kidney Disease" before "Retinopathy" if the former has more associated guidelines.*
+
+**Joining the Lists**:
+The "Graph Path" list is **not** a merge of multiple disparate templates. Instead:
+
+1. The `QueryRouter` selects exactly **one** primary template (e.g., `recommendations_by_condition`) based on its intent analysis.
+2. That template handles the joins and sorting server-side in Neo4j.
+3. The resulting ordered list is passed as the "syntactic truth" to the Fusion stage.
+
+---
+
 ### Stage 3: Result Fusion
 
 Merge results from both retrieval paths into a single ranked list using **Reciprocal Rank Fusion (RRF)**.
