@@ -311,20 +311,44 @@ Not every query needs all paths. Use the query analyzer output to select the app
 
 ---
 
-## Relationship to Existing Infrastructure
+---
 
-Everything described here builds on Phase 1 infrastructure already in place:
+## Future Evolution: The Two-Layer Strategy
 
-| Component | Phase 1 Foundation | Query Strategy Addition |
-|-----------|-------------------|------------------------|
-| Vector indexes | `recommendation_embedding`, `scenario_embedding`, `intervention_embedding` created | ANN search via `db.index.vector.queryNodes()` |
-| Embeddings | `genai.vector.encodeBatch()` utility in `utils/embeddings.py` | Query-time embedding for search |
-| Graph schema | 17 node types, all relationships defined | Cypher traversal templates per intent |
-| Traversal patterns | 7 tested patterns in `scripts/example_traversals.cypher` | Parameterized versions as retrieval templates |
-| Cosine similarity | `vector.similarity.cosine()` verified | Pairwise scoring in fusion/rerank |
+As the system moves toward the **Advanced Embedding Strategy** (detailed in [vector-search.md](file:///c:/Projects/va-work/HiGraph-CPG/docs/vector-search.md)), the query strategy will evolve from "Hybrid Retrieval" to **"Deep Geometric Retrieval."**
+
+### 1. The Impact of Layered Vectorization
+
+The transition to a two-layer model (Augmented NLP + Geometric KGE/Rotate) changes the pipeline significantly:
+
+- **Augmented NLP Retrieval**: Semantic search becomes "Graph-Aware." Because node embeddings will include text from their neighbors, a query for "Metformin" will naturally retrieve "CKD" nodes even without a graph hop, because the CKD node "knows" about its metformin relationship via the first vector layer.
+- **Geometric Search (KGE Path)**: A new retrieval path is added where we search specifically in the **KGE vector space**. This allows the system to find nodes based on their **structural role** (e.g., "finding everything that acts as a second-line treatment") even if the words don't match.
+- **Tri-Path Fusion (RRF)**: Reciprocal Rank Fusion will evolve to merge three lists:
+  1. **Semantic List** (What it sounds like)
+  2. **Geometric List** (What it acts like)
+  3. **Structural List** (How it's actually linked)
+
+### 2. Is the Current Approach "Right"?
+
+Yes, the current **Single-Entry Graph Path** is the correct architecture for the MVP/Neo4j phase. However, as we migrate to **Cosmos DB (Graph-on-Document)**, the "Graph Path" becomes more expensive (latency-wise) due to document partitioning.
+
+**The Evolution**:
+
+- **Current**: Use Graph Traversals for "Heavy Lifting."
+- **Future**: Use **Embeddings for Search** (NLP + KGE) and **Graph for Verification.**
+- The KGE layer essentially "pre-computes" the graph's connections into the vector space, allowing the system to maintain 99% accuracy while reducing the number of expensive Gremlin hops in a distributed document environment.
+
+### 3. Roadmap Changes
+
+| Component | Current (Neo4j) | Future (Cosmos/KGE) |
+| :--- | :--- | :--- |
+| **Search Surface** | Text-only | Text + Structure (KGE) |
+| **Ranking Logic** | Sequential/Manual | Geometric/Learned |
+| **Traversal Role** | Primary Discovery | Precision Verification |
+| **Accuracy Driver** | Human-Coded Rules | Mathematical Blueprint |
 
 ---
 
-**Document Version**: 1.0
-**Created**: February 4, 2026
-**Status**: Design — pending Phase 2 completion before implementation
+**Document Version**: 1.1
+**Updated**: February 18, 2026
+**Status**: Implemented (V1) / Roadmap (V2)
