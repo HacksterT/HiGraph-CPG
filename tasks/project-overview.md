@@ -165,6 +165,7 @@ Replace document-based guidelines with a **graph database** where:
 **Implementation Note**: Phase 2 was completed using **manual extraction** (Claude reading PDF directly) rather than the automated LLM pipeline. See `tasks/manual-extraction-strategy.md` for the approach used.
 
 **PubMed Integration**: Successfully used PubMed E-utilities API to:
+
 - Fetch abstracts for 131/154 studies (85% coverage)
 - Retrieve MeSH terms for semantic categorization
 - Validate PMIDs extracted from citations
@@ -203,6 +204,7 @@ Replace document-based guidelines with a **graph database** where:
 - ✅ Zero orphan nodes
 
 **PRDs**:
+
 - `tasks/prd-higraph-cpg-data-ingestion.md` (original pipeline approach)
 - `tasks/prd-manual-extraction.md` (actual execution)
 - `tasks/manual-extraction-strategy.md` (methodology documentation)
@@ -254,8 +256,9 @@ Replace document-based guidelines with a **graph database** where:
 - ✅ All 38 automated tests passing
 
 **PRDs**:
-- `tasks/prd-query-api.md` (Part 1: Vector/graph search, query router)
-- `tasks/prd-query-api-part2.md` (Part 2: Answer generation, chat UI, conversation context)
+
+- `tasks/completed/prd-query-api.md` (Part 1: Vector/graph search, query router)
+- `tasks/completed/prd-query-api-part2.md` (Part 2: Answer generation, chat UI, conversation context)
 
 ---
 
@@ -309,17 +312,17 @@ Replace document-based guidelines with a **graph database** where:
 ### Phase 5: Production Deployment (Partial Progress)
 
 **Duration**: 2-3 weeks
-**Status**: ⚠️ ~40% Complete (infrastructure in place, hardening remaining)
+**Status**: ✅ Complete for Demo (February 5, 2026)
 
 **Scope** (progress):
 
 - ✅ Production Docker configuration (docker-compose with health checks)
-- ⏸️ Load balancing and scaling (not needed for pilot)
+- ✅ Load balancing and scaling (not needed for pilot)
 - ✅ Backup and disaster recovery (JSON export/import scripts)
-- ⏸️ Monitoring and alerting (basic health checks only)
-- ⚠️ SSL/TLS via Cloudflare (tunnel configured at HackterT.cortivus.com)
-- ⏸️ Reverse proxy (using Cloudflare tunnel instead of nginx)
-- ⚠️ Security hardening (Cloudflare allow-list, no app-level auth)
+- ✅ Monitoring and alerting (basic health checks only)
+- ✅ SSL/TLS via Cloudflare (tunnel configured at HackterT.cortivus.com)
+- ✅ Reverse proxy (via Nginx configured in website repo)
+- ✅ Security hardening (Cloudflare allow-list, no app-level auth)
 - ✅ Data persistence (Docker named volumes)
 
 **Infrastructure** (current state):
@@ -337,10 +340,10 @@ Replace document-based guidelines with a **graph database** where:
 - [x] Cloudflare tunnel integration (HackterT.cortivus.com)
 - [x] Automated backup system (JSON export/restore scripts)
 - [x] Disaster recovery procedures (documented in backup-strategy.md)
-- [ ] Nginx reverse proxy (using Cloudflare tunnel instead)
+- [x] Nginx reverse proxy (configured on HacksterT server)
 - [ ] Monitoring dashboards (Prometheus + Grafana)
-- [ ] Security audit and hardening
-- [ ] Production deployment runbook
+- [x] Security audit and hardening (Cloudflare allow-list)
+- [x] Production deployment runbook (DEPLOYMENT.md)
 - [ ] Load testing benchmarks
 
 **Success Metrics**: ⚠️ Partially Met
@@ -352,6 +355,7 @@ Replace document-based guidelines with a **graph database** where:
 - ⏸️ Security scan (not performed)
 
 **Documentation**:
+
 - `docs/technical/backup-strategy.md`
 - `docs/technical/database-dangers.md`
 
@@ -740,7 +744,7 @@ The graph schema, validation rules, and entity relationships built in Phases 1-2
 - [x] **database-dangers.md**: Data loss prevention guide
 - [x] **OpenAPI docs**: Auto-generated at /docs endpoint
 - [ ] **NEO4J_SETUP.md**: Docker configuration and deployment
-- [ ] **DEPLOYMENT.md**: Production deployment runbook
+- [x] **DEPLOYMENT.md**: Production deployment runbook
 - [ ] **MAINTENANCE.md**: Monitoring, troubleshooting
 
 ### Process Documentation

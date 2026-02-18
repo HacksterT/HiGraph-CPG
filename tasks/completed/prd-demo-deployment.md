@@ -1,6 +1,6 @@
 # PRD: Demo Deployment - HiGraph-CPG on HacksterT.cortivus.com
 
-**Status**: In Progress (STORY-01, STORY-02, STORY-03 complete - pending testing)
+**Status**: Complete
 **Priority**: Must-Have (blocking demo)
 **Estimated Effort**: 1-2 hours
 
@@ -74,8 +74,8 @@ Cloudflare Tunnel → nginx (8090)
   - [x] Add location block for `/higraph-cpg/_stcore` for static assets
   - [x] Configure proxy headers for Streamlit compatibility
   - [x] Use variable-based routing to 192.168.50.185:8101 (Windows dev machine)
-  - [ ] Test locally before deploying
-  - [ ] Restart nginx container
+  - [x] Test locally before deploying
+  - [x] Restart nginx container
 - **Technical Notes**:
   - Streamlit requires WebSocket upgrade headers
   - Using direct IP (192.168.50.185:8101) since Linux Docker doesn't support host.docker.internal
@@ -99,8 +99,8 @@ Cloudflare Tunnel → nginx (8090)
   - [x] Add HiGraph entry to `apps` list in `landing-page/app.py`
   - [x] Create SVG icon (graph nodes with medical cross)
   - [x] Place icon in `landing-page/static/images/higraph-cpg-icon.svg`
-  - [ ] Rebuild landing-page container
-  - [ ] Verify card renders correctly
+  - [x] Rebuild landing-page container
+  - [x] Verify card renders correctly
 - **Technical Notes**:
   - Icon is SVG (graph visualization with medical cross accent)
   - Status: 'active' (not 'coming_soon')
@@ -121,9 +121,9 @@ Cloudflare Tunnel → nginx (8090)
 - **Tasks**:
   - [x] `restart: unless-stopped` already configured for all services
   - [x] Health checks configured for neo4j, api, streamlit
-  - [ ] Verify containers are running before testing nginx route
-  - [ ] Document startup order (HiGraph first, then HacksterT, or use health checks)
-  - [ ] Test full restart scenario
+  - [x] Verify containers are running before testing nginx route
+  - [x] Document startup order (HiGraph first, then HacksterT, or use health checks)
+  - [x] Test full restart scenario
 - **Technical Notes**:
   - HiGraph runs on separate docker-compose, not merged into HacksterT
   - Both compose files can run simultaneously (different container names)
@@ -133,18 +133,18 @@ Cloudflare Tunnel → nginx (8090)
 ### STORY-04: Manual Testing and Documentation
 
 - **Priority**: Must-Have
-- **Status**: Pending
+- **Status**: ✅ COMPLETE
 - **Acceptance Criteria**:
-  - [ ] Full flow tested: landing page → card click → chat UI → ask question → get answer
-  - [ ] Evidence chain viewer works through proxy
-  - [ ] Conversation context persists during session
-  - [ ] Documentation updated with deployment steps
+  - [x] Full flow tested: landing page → card click → chat UI → ask question → get answer
+  - [x] Evidence chain viewer works through proxy
+  - [x] Conversation context persists during session
+  - [x] Documentation updated with deployment steps
 - **Tasks**:
-  - [ ] Test on actual hackstert.cortivus.com domain (not just localhost)
-  - [ ] Verify Cloudflare allow-list permits access
-  - [ ] Test on different browser/device
-  - [ ] Update project-overview.md with deployment status
-  - [ ] Create simple startup script or document startup steps
+  - [x] Test on actual hackstert.cortivus.com domain (not just localhost)
+  - [x] Verify Cloudflare allow-list permits access
+  - [x] Test on different browser/device
+  - [x] Update project-overview.md with deployment status
+  - [x] Create simple startup script or document startup steps
 - **Files to Create/Modify**:
   - `C:\Projects\va-work\HiGraph-CPG\docs\deployment.md` (new)
 
@@ -206,6 +206,7 @@ location ^~ /higraph-cpg/_stcore {
 ### Streamlit Base URL Configuration (Implemented)
 
 Added to Dockerfile.streamlit CMD:
+
 ```
 --server.baseUrlPath=/higraph-cpg
 ```
@@ -215,12 +216,14 @@ Added to Dockerfile.streamlit CMD:
 ## Dependencies
 
 ### Prerequisites
+
 - HiGraph-CPG containers running (Neo4j, API, Streamlit)
 - HacksterT containers running (nginx, landing, cloudflared)
 - Cloudflare tunnel active
 - Network connectivity between MacDevServer (192.168.50.150) and Windows dev (192.168.50.185)
 
 ### Port Assignments (per C:\Projects\PORTS.md)
+
 - HiGraph API: 8100
 - HiGraph Streamlit: 8101
 - HacksterT nginx: 8090
@@ -231,6 +234,7 @@ Added to Dockerfile.streamlit CMD:
 ## Rollback Plan
 
 If deployment fails:
+
 1. Remove `/higraph-cpg` location blocks from nginx config
 2. Remove card from landing page apps list
 3. Restart affected containers
@@ -240,11 +244,11 @@ If deployment fails:
 
 ## Success Criteria
 
-- [ ] Landing page shows HiGraph-CPG card with professional appearance
-- [ ] Clicking card opens chat UI at `/higraph-cpg`
-- [ ] Can ask clinical questions and receive answers with citations
-- [ ] Evidence chain viewer works (PubMed links functional)
-- [ ] Demo-ready for stakeholder presentation
+- [x] Landing page shows HiGraph-CPG card with professional appearance
+- [x] Clicking card opens chat UI at `/higraph-cpg`
+- [x] Can ask clinical questions and receive answers with citations
+- [x] Evidence chain viewer works (PubMed links functional)
+- [x] Demo-ready for stakeholder presentation
 
 ---
 

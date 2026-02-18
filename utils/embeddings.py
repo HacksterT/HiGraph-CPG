@@ -168,3 +168,4 @@ def pairwise_cosine_similarity(tx, label: str, id1: str, id2: str, id_property: 
     result = tx.run(query, id1=id1, id2=id2)
     record = result.single()
     return record["similarity"] if record else None
+ 
