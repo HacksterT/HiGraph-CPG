@@ -177,66 +177,45 @@ RETURN r, eb, s
 
 ### Stage 3: Result Fusion
 
-Merge results from both retrieval paths into a single ranked list.
+Merge results from both retrieval paths into a single ranked list using **Reciprocal Rank Fusion (RRF)**.
 
-**Reciprocal Rank Fusion (RRF)**:
+**Implementation**:
+The system uses the RRF algorithm implemented in `api/services/fusion.py`.
 
 ```
 RRF_score(node) = Σ  1 / (k + rank_in_path)
                   for each path where node appears
 ```
 
-Where `k` is a constant (typically 60). Nodes appearing in both paths get boosted.
+Where `k` is a constant (set to 60). Nodes appearing in both paths (e.g., found via semantic search AND specifically linked in the graph) receive a significant ranking boost.
 
-**Alternative — Weighted combination**:
-
-```
-final_score = (vector_score * w_vector) + (graph_relevance * w_graph)
-```
-
-Where `graph_relevance` is derived from:
-
-- Traversal distance from matched entity (closer = higher)
-- Relationship type importance (CONTRAINDICATES > ALTERNATIVE_TO for safety queries)
-- Node status (Active > Superseded)
-
-**Deduplication**: Same node may appear from both paths — keep the higher score.
+**Deduplication**: Results are automatically deduplicated by `rec_id`, keeping the highest aggregated RRF score.
 
 ---
 
-### Stage 4: Re-ranking
+### Stage 4: Re-ranking (`reranker.py`)
 
-Re-score the fused candidates using a more precise (but slower) method.
+Re-score the fused candidates using **Clinical Rule-based Boosting**. This ensures the most actionable and scientifically rigorous recommendations surface to the top of the context window.
 
-**Option A: Cross-encoder model** (recommended for production)
+**Multipliers Applied**:
+The system applies property-based multipliers to the base (RRF or cosine) score:
 
-- Use a model like Cohere Rerank or a fine-tuned BERT cross-encoder
-- Scores each (query, candidate_text) pair directly
-- More accurate than vector cosine similarity because it sees both texts together
-- ~100ms for 20 candidates
+- **Recommendation Strength**:
+  - `Strong` → 1.2x boost
+  - `Weak` → 1.0x (neutral)
+  - `Neither` → 0.9x penalty
+- **Evidence Quality**:
+  - `High` → 1.15x boost
+  - `Moderate` → 1.05x boost
+  - `Low` → 0.95x penalty
+  - `Very Low` → 0.85x penalty
+- **Direction**:
+  - `For` → 1.05x boost (actionable)
+  - `Against` / `Neither` → 1.0x
+- **Topic Relevance**:
+  - If a returned recommendation matches a topic extracted by the `QueryRouter`, it receives an additional **1.1x relevance boost**.
 
-**Option B: LLM-based re-ranking** (simpler, higher cost)
-
-- Send the query + top 20 candidates to Claude in a single prompt
-- Ask: "Rank these results by relevance to the query. Consider clinical safety."
-- More expensive per query but requires no additional model deployment
-- Can incorporate clinical reasoning (e.g., prioritize safety concerns)
-
-**Option C: Clinical rule-based boosting** (lightweight, no extra model)
-
-- Apply multipliers based on node properties:
-  - `strength = "Strong"` → 1.2x boost
-  - `status = "Active"` → required (filter out Superseded)
-  - `severity = "Critical"` on Contraindication → 1.5x boost for safety queries
-  - `quality_rating = "High"` on EvidenceBody → 1.1x boost
-- Fast, deterministic, clinically grounded
-- Can be combined with Option A or B
-
-**Implemented approach**:
-
-- **Reciprocal Rank Fusion (RRF)** combines vector and graph scores.
-- **Rule-based clinical boosting** (e.g., Strength, Quality) ensures evidenced results surface highest.
-- **Context Augmentation**: Final results are expanded with relationship data before feeding the Answer Generator.
+This approach is fast, deterministic, and ensures clinical safety and evidence rigor are prioritized over raw semantic similarity.
 
 ---
 
