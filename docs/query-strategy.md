@@ -194,21 +194,25 @@ The "Graph Path" does not merge multiple templates or ranking methods. Instead:
 
 ---
 
-### Stage 3: Result Fusion
+### Stage 3: Result Fusion & Orchestration
 
-Merge results from both retrieval paths into a single ranked list using **Reciprocal Rank Fusion (RRF)**.
+The system intelligently fuses results only when multiple retrieval paths yield data. This is orchestrated in `api/routers/answer.py`:
+
+- **Hybrid Path (Both Found)**: If both Vector and Graph paths return results, they are combined using **Reciprocal Rank Fusion (RRF)**.
+- **Single Path (Graceful Degradation)**: If only one path (e.g., Vector only) returns results, the **RRF stage is bypassed** to preserve the raw rankings of that path.
+- **Always Re-rank**: Regardless of whether fusion occurred, the results **always** pass through Stage 4 (Clinical Re-ranking) to ensure clinical metadata (strength, quality) is applied.
 
 **Implementation**:
-The system uses the RRF algorithm implemented in `api/services/fusion.py`.
+The system uses the RRF algorithm implemented in `api/services/fusion.py` for the hybrid path.
 
 ```
 RRF_score(node) = Σ  1 / (k + rank_in_path)
                   for each path where node appears
 ```
 
-Where `k` is a constant (set to 60). Nodes appearing in both paths (e.g., found via semantic search AND specifically linked in the graph) receive a significant ranking boost.
+Where `k` is a constant (set to 60). Nodes appearing in both paths receive a significant ranking boost.
 
-**Deduplication**: Results are automatically deduplicated by `rec_id`, keeping the highest aggregated RRF score.
+**Deduplication**: Results are automatically deduplicated by `rec_id`, keeping the highest aggregated score.
 
 ---
 
@@ -240,17 +244,18 @@ This approach is fast, deterministic, and ensures clinical safety and evidence r
 
 ### Stage 5: Answer Generation
 
-Feed the top re-ranked results to an LLM to generate a natural language answer.
+**Context assembly**: For the top 3 re-ranked results, the system performs a **directed 1-2 hop traversal** to gather supporting clinical context. This is orchestrated via the `_fetch_studies` function in `api/routers/answer.py`.
 
-**Context assembly**: For each top result node, traverse 1-2 hops to gather supporting context:
+**Implemented Path (`evidence_chain_full`)**:
 
+```cypher
+(Recommendation)-[:BASED_ON]->(EvidenceBody)
+  - Evidence Quality (via `EvidenceBody.quality_rating`)
+  - Key Question (via `[:ANSWERS]->(KeyQuestion)`)
+  - Supporting Studies (via `[:INCLUDES]->(Study)`)
 ```
-Recommendation node → expand to:
-  - Evidence quality (via BASED_ON → EvidenceBody.quality_rating)
-  - Key studies (via BASED_ON → EvidenceBody → INCLUDES → Study)
-  - Contraindications (via RECOMMENDS → Intervention → CONTRAINDICATED_BY)
-  - Patient modifiers (via PatientCharacteristic → MODIFIES)
-```
+
+*Note: Safety traversals (Contraindications) and Patient Modifiers are currently defined in the schema but are utilized primarily in safety-check intents rather than the general answer context assembly.*
 
 **Prompt structure**:
 
