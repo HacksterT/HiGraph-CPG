@@ -137,7 +137,7 @@ def main():
         return  # Don't show chat when viewing evidence
 
     # Display chat history
-    for message in st.session_state.messages:
+    for msg_idx, message in enumerate(st.session_state.messages):
         if message["role"] == "user":
             render_user_message(message["content"])
         else:
@@ -145,6 +145,7 @@ def main():
                 message["content"],
                 message.get("citations", []),
                 message.get("reasoning", {}),
+                message_index=msg_idx,
             )
 
     # Chat input
@@ -187,6 +188,7 @@ def main():
                 response.get("answer", ""),
                 response.get("citations", []),
                 response.get("reasoning", {}),
+                message_index=len(st.session_state.messages) - 1,
             )
 
         st.rerun()

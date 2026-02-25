@@ -5,12 +5,13 @@ import streamlit as st
 from components.evidence import render_evidence_chain
 
 
-def render_citations(citations: list[dict], show_evidence_buttons: bool = True):
+def render_citations(citations: list[dict], show_evidence_buttons: bool = True, message_index: int = 0):
     """
     Render citations as expandable sections.
 
     Args:
         citations: List of citation dicts with rec_id, rec_text, strength, direction, topic
+        message_index: Index of the parent chat message (used to make widget keys unique)
     """
     if not citations:
         return
@@ -51,7 +52,7 @@ def render_citations(citations: list[dict], show_evidence_buttons: bool = True):
                 evidence_key = f"show_evidence_{rec_id}"
                 if st.button(
                     "🔍 View Evidence Chain",
-                    key=f"evidence_btn_{rec_id}_{i}",
+                    key=f"evidence_btn_{rec_id}_{message_index}_{i}",
                     use_container_width=False,
                 ):
                     st.session_state[evidence_key] = True

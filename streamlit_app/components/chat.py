@@ -15,6 +15,7 @@ def render_chat_message(
     content: str,
     citations: list[dict],
     reasoning: dict,
+    message_index: int = 0,
 ):
     """
     Render an assistant message with citations and reasoning.
@@ -23,6 +24,7 @@ def render_chat_message(
         content: The answer text (markdown supported)
         citations: List of citation dicts with rec_id, rec_text, strength, direction
         reasoning: Reasoning metadata dict
+        message_index: Index of this message in the chat history (used to make widget keys unique)
     """
     with st.chat_message("assistant"):
         # Main answer
@@ -30,7 +32,7 @@ def render_chat_message(
 
         # Citations section
         if citations:
-            render_citations(citations)
+            render_citations(citations, message_index=message_index)
 
         # Reasoning/metadata (collapsed by default, or expanded if debug mode)
         if reasoning:

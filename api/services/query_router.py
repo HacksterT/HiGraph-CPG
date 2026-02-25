@@ -1,10 +1,13 @@
 """LLM-powered query router for intelligent retrieval strategy selection."""
 
 import json
+import logging
 import time
 from typing import Any
 
 import httpx
+
+logger = logging.getLogger(__name__)
 
 from api.config import Settings, get_settings
 from api.models.query import (
@@ -144,13 +147,22 @@ class QueryRouter:
 
             # Extract the text content
             content = result["content"][0]["text"]
+            logger.info("Router LLM response: %s", content[:500])
 
             # Parse the JSON response
             decision_data = self._parse_response(content)
             decision = self._build_decision(decision_data)
+            logger.info(
+                "Routing decision: type=%s, intent=%s, entities=%s, template=%s",
+                decision.query_type.value,
+                decision.intent.value,
+                decision.entities,
+                decision.template_hint,
+            )
 
         except (httpx.HTTPError, json.JSONDecodeError, KeyError) as e:
             # Fallback to VECTOR search if routing fails
+            logger.error("Routing failed: %s: %s", type(e).__name__, e)
             decision = RoutingDecision(
                 query_type=QueryType.VECTOR,
                 intent=Intent.GENERAL_QUESTION,
