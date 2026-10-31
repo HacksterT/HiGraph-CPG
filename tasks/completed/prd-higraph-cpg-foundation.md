@@ -20,7 +20,7 @@
   - **Priority**: Must-Have
   - **Acceptance Criteria**: (verified at Manual Testing checkpoint)
     - [x] Neo4j Community Edition running in Docker container on localhost:7474 (confirmed no conflict in `C:\Projects\PORTS.md`, updated with assigned ports)
-    - [x] Neo4j Browser accessible with credentials (neo4j/Troyster1)
+    - [x] Neo4j Browser accessible with credentials (neo4j/)
     - [x] Docker Compose file allows easy start/stop of database
     - [x] Data persists across container restarts via volume mounting
     - [x] Environment variables configured for database credentials
