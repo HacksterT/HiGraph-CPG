@@ -217,7 +217,7 @@ HiGraph-CPG/
 - **Memory**: NEO4J_server_memory_heap_initial__size=2G, NEO4J_server_memory_heap_max__size=2G
 - **Page cache**: NEO4J_server_memory_pagecache_size=1G
 - **Plugins**: GenAI (embeddings via `genai.vector.encodeBatch()`), APOC Extended (utilities)
-- **Security**: Development uses NEO4J_AUTH=neo4j/Troyster1
+- **Security**: Development uses NEO4J_AUTH=neo4j/
 
 ### Technology Stack
 
